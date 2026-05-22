@@ -21,7 +21,7 @@ function Bar({ used, capacity, color }: { used: number; capacity: number; color:
   const over = used > capacity;
   return (
     <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={used}>
-      <div className={`h-full ${over ? 'bg-rose-50 dark:bg-rose-900/200' : color}`} style={{ width: `${pct}%` }} />
+      <div className={`h-full ${over ? 'bg-rose-500' : color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -199,7 +199,7 @@ export function RackBuilder() {
                         {derived.ru_used} / {derived.ru_capacity}
                       </span>
                     </div>
-                    <Bar used={derived.ru_used} capacity={derived.ru_capacity} color="bg-sky-50 dark:bg-sky-900/200" />
+                    <Bar used={derived.ru_used} capacity={derived.ru_capacity} color="bg-sky-500" />
                   </div>
                   <div>
                     <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -208,7 +208,7 @@ export function RackBuilder() {
                         {format_power(derived.power_max_w)} / {format_power(derived.power_capacity_w)}
                       </span>
                     </div>
-                    <Bar used={derived.power_max_w} capacity={derived.power_capacity_w} color="bg-emerald-50 dark:bg-emerald-900/200" />
+                    <Bar used={derived.power_max_w} capacity={derived.power_capacity_w} color="bg-emerald-500" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
