@@ -89,6 +89,13 @@ export function ClusterView() {
             className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </div>
+        <button
+          onClick={() => window.print()}
+          className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded h-fit"
+          title="Print or save the cluster summary as PDF"
+        >
+          Print / Save as PDF
+        </button>
       </div>
 
       <div className="grid grid-cols-[1fr_1fr] gap-4">

@@ -1,14 +1,10 @@
 # Ceph Cluster Planner
 
+**Live site → https://lancealot.github.io/ceph-cluster-planner/**
+
 Static, browser-based sizing and costing tool for Ceph clusters. Build configurations bottom-up — pick chassis and parts, assemble nodes into racks, then assemble racks into a cluster with pools — and see every derived value (raw vs usable capacity, $/TB, kW, $/TB usable, W/TB usable) update live, with validation rules that flag the common pitfalls.
 
 All computation is client-side. There is no backend.
-
-## Live site
-
-After the one-time GitHub Pages setup below, the app lives at:
-
-`https://lancealot.github.io/ceph-cluster-planner/`
 
 ## Quickstart (local development)
 
