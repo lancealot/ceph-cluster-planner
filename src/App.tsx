@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { WorkspaceProvider } from './state/workspace';
 import { ComponentLibrary } from './components/ComponentLibrary';
 import { ImportExport } from './components/ImportExport';
+import { NodeBuilder } from './components/NodeBuilder';
+import { RackBuilder } from './components/RackBuilder';
 
 const tabs = ['components', 'nodes', 'racks', 'cluster', 'scenarios'] as const;
 type Tab = (typeof tabs)[number];
@@ -56,7 +58,10 @@ export default function App() {
           </ul>
         </nav>
         <main className="flex-1 bg-slate-50">
-          {tab === 'components' ? <ComponentLibrary /> : <Placeholder name={tabLabels[tab]} />}
+          {tab === 'components' && <ComponentLibrary />}
+          {tab === 'nodes' && <NodeBuilder />}
+          {tab === 'racks' && <RackBuilder />}
+          {(tab === 'cluster' || tab === 'scenarios') && <Placeholder name={tabLabels[tab]} />}
         </main>
       </div>
     </WorkspaceProvider>

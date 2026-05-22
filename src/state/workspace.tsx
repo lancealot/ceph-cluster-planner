@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
@@ -7,13 +8,21 @@ import {
   type ReactNode,
 } from 'react';
 import type { Workspace } from '../types/scenario';
+import type { NodeConfig } from '../types/node';
+import type { RackConfig } from '../types/rack';
+import type { ClusterConfig } from '../types/cluster';
 import { emptyWorkspace } from './defaults';
 
 const STORAGE_KEY = 'ccp.v1.workspace';
 
 export type WorkspaceAction =
   | { type: 'replace_workspace'; workspace: Workspace }
-  | { type: 'reset' };
+  | { type: 'reset' }
+  | { type: 'upsert_node'; node: NodeConfig }
+  | { type: 'delete_node'; id: string }
+  | { type: 'upsert_rack'; rack: RackConfig }
+  | { type: 'delete_rack'; id: string }
+  | { type: 'update_cluster'; cluster: ClusterConfig };
 
 function reducer(state: Workspace, action: WorkspaceAction): Workspace {
   switch (action.type) {
@@ -21,6 +30,38 @@ function reducer(state: Workspace, action: WorkspaceAction): Workspace {
       return action.workspace;
     case 'reset':
       return emptyWorkspace();
+    case 'upsert_node': {
+      const idx = state.nodes.findIndex((n) => n.id === action.node.id);
+      const nodes = idx >= 0 ? state.nodes.map((n, i) => (i === idx ? action.node : n)) : [...state.nodes, action.node];
+      return { ...state, nodes };
+    }
+    case 'delete_node': {
+      return {
+        ...state,
+        nodes: state.nodes.filter((n) => n.id !== action.id),
+        racks: state.racks.map((r) => ({
+          ...r,
+          nodes: r.nodes.filter((s) => s.node_config_id !== action.id),
+        })),
+      };
+    }
+    case 'upsert_rack': {
+      const idx = state.racks.findIndex((r) => r.id === action.rack.id);
+      const racks = idx >= 0 ? state.racks.map((r, i) => (i === idx ? action.rack : r)) : [...state.racks, action.rack];
+      return { ...state, racks };
+    }
+    case 'delete_rack': {
+      return {
+        ...state,
+        racks: state.racks.filter((r) => r.id !== action.id),
+        cluster: {
+          ...state.cluster,
+          racks: state.cluster.racks.filter((s) => s.rack_config_id !== action.id),
+        },
+      };
+    }
+    case 'update_cluster':
+      return { ...state, cluster: action.cluster };
     default:
       return state;
   }
@@ -33,10 +74,7 @@ function loadInitial(): Workspace {
     if (!raw) return emptyWorkspace();
     const parsed = JSON.parse(raw) as Workspace;
     if (!parsed || typeof parsed !== 'object') return emptyWorkspace();
-    return {
-      ...emptyWorkspace(),
-      ...parsed,
-    };
+    return { ...emptyWorkspace(), ...parsed };
   } catch {
     return emptyWorkspace();
   }
@@ -45,6 +83,11 @@ function loadInitial(): Workspace {
 interface Ctx {
   workspace: Workspace;
   dispatch: Dispatch<WorkspaceAction>;
+  upsertNode: (n: NodeConfig) => void;
+  deleteNode: (id: string) => void;
+  upsertRack: (r: RackConfig) => void;
+  deleteRack: (id: string) => void;
+  updateCluster: (c: ClusterConfig) => void;
 }
 
 const WorkspaceContext = createContext<Ctx | null>(null);
@@ -60,8 +103,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [workspace]);
 
+  const upsertNode = useCallback((n: NodeConfig) => dispatch({ type: 'upsert_node', node: n }), []);
+  const deleteNode = useCallback((id: string) => dispatch({ type: 'delete_node', id }), []);
+  const upsertRack = useCallback((r: RackConfig) => dispatch({ type: 'upsert_rack', rack: r }), []);
+  const deleteRack = useCallback((id: string) => dispatch({ type: 'delete_rack', id }), []);
+  const updateCluster = useCallback((c: ClusterConfig) => dispatch({ type: 'update_cluster', cluster: c }), []);
+
   return (
-    <WorkspaceContext.Provider value={{ workspace, dispatch }}>
+    <WorkspaceContext.Provider
+      value={{ workspace, dispatch, upsertNode, deleteNode, upsertRack, deleteRack, updateCluster }}
+    >
       {children}
     </WorkspaceContext.Provider>
   );
