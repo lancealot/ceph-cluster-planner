@@ -11,6 +11,7 @@ import {
 } from '../../calc/scenario';
 import { deserialize } from '../../calc/scenario';
 import { buildSc846ReferenceScenario } from '../../scenarios/sc846-reference';
+import { buildShareUrl } from '../../calc/shareLink';
 import { format_bytes, format_power, format_usd } from '../../calc/units';
 import { WarningsList } from '../Common/WarningsList';
 import type { Scenario } from '../../types/scenario';
@@ -82,6 +83,18 @@ export function ScenarioManager() {
   const [baseId, setBaseId] = useState<string>('');
   const [compareId, setCompareId] = useState<string>('');
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+
+  async function copyShareLink() {
+    setShareMessage(null);
+    const url = buildShareUrl(workspace, name.trim() || 'shared workspace');
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMessage(`Link copied (${url.length.toLocaleString()} chars). Anyone opening it will be asked before replacing their workspace.`);
+    } catch {
+      setShareMessage(`Copy failed — here is the link:\n${url}`);
+    }
+  }
 
   function saveCurrent() {
     const scenarioName = name.trim() || `Scenario ${scenarios.length + 1}`;
@@ -145,6 +158,9 @@ export function ScenarioManager() {
           <button onClick={loadBundled} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
             Load SC846 reference
           </button>
+          <button onClick={copyShareLink} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded" title="Copy a URL containing the current workspace">
+            Copy share link
+          </button>
           <label className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded cursor-pointer">
             Import .json
             <input
@@ -161,6 +177,9 @@ export function ScenarioManager() {
         </div>
         {importMessage ? (
           <pre className="text-xs text-rose-700 dark:text-rose-300 whitespace-pre-wrap">{importMessage}</pre>
+        ) : null}
+        {shareMessage ? (
+          <pre className="text-xs text-sky-700 dark:text-sky-300 whitespace-pre-wrap break-all">{shareMessage}</pre>
         ) : null}
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Current workspace: {currentComputed.cluster.total_node_count} nodes ·{' '}

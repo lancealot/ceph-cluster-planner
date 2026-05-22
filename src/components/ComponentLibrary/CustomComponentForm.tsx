@@ -261,7 +261,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         </div>
       ) : null}
       {draft.category === 'cpu' ? (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           <label>
             <div className="text-xs text-slate-500 dark:text-slate-400">Cores</div>
             <input
@@ -269,6 +269,27 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
               min={0}
               value={num(d.cores)}
               onChange={(e) => patchAny('cores', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Threads</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.threads)}
+              onChange={(e) => patchAny('threads', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Base clock (GHz)</div>
+            <input
+              type="number"
+              step={0.1}
+              min={0}
+              value={num(d.base_clock_ghz)}
+              onChange={(e) => patchAny('base_clock_ghz', parseFloat(e.target.value) || 0)}
               className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
@@ -289,6 +310,127 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
               onChange={(e) => patchAny('socket', e.target.value)}
               className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
+          </label>
+        </div>
+      ) : null}
+      {draft.category === 'hba' ? (
+        <div className="grid grid-cols-4 gap-2">
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Ports</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.ports)}
+              onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Port type</div>
+            <select
+              value={str(d.port_type)}
+              onChange={(e) => patchAny('port_type', e.target.value)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            >
+              <option value="sas">sas</option>
+              <option value="sata">sata</option>
+              <option value="nvme">nvme</option>
+            </select>
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe lanes</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.pcie_lanes)}
+              onChange={(e) => patchAny('pcie_lanes', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe gen</div>
+            <select
+              value={num(d.pcie_gen)}
+              onChange={(e) => patchAny('pcie_gen', parseInt(e.target.value) || 3)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            >
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5</option>
+            </select>
+          </label>
+        </div>
+      ) : null}
+      {draft.category === 'nic' ? (
+        <div className="grid grid-cols-4 gap-2">
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Ports</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.ports)}
+              onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Port speed (Gb/s)</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.port_speed_gbps)}
+              onChange={(e) => patchAny('port_speed_gbps', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe lanes</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.pcie_lanes)}
+              onChange={(e) => patchAny('pcie_lanes', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe gen</div>
+            <select
+              value={num(d.pcie_gen)}
+              onChange={(e) => patchAny('pcie_gen', parseInt(e.target.value) || 3)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            >
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+              <option value={5}>5</option>
+            </select>
+          </label>
+        </div>
+      ) : null}
+      {draft.category === 'psu' ? (
+        <div className="grid grid-cols-2 gap-2">
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Wattage</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.wattage)}
+              onChange={(e) => patchAny('wattage', parseInt(e.target.value) || 0)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Efficiency</div>
+            <select
+              value={str(d.efficiency_rating)}
+              onChange={(e) => patchAny('efficiency_rating', e.target.value)}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            >
+              <option value="80plus_gold">80+ Gold</option>
+              <option value="80plus_platinum">80+ Platinum</option>
+              <option value="80plus_titanium">80+ Titanium</option>
+              <option value="other">other</option>
+            </select>
           </label>
         </div>
       ) : null}
@@ -328,7 +470,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         ) : null}
       </div>
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Common fields cover most validation; advanced category-specific fields (chassis bays, PCIe lanes, etc.) can be tuned by editing the exported JSON until the editor is expanded in a later release.
+        Drive RPM and SSD endurance (DWPD) are display-only; tune them via the exported JSON if needed.
       </p>
     </form>
   );

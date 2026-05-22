@@ -1,3 +1,61 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@media print {
+  html.dark {
+    background: #fff;
+    color: #000;
+  }
+  .no-print,
+  header,
+  nav,
+  footer,
+  button {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body,
+  main,
+  .bg-slate-50,
+  .bg-slate-900,
+  .bg-white,
+  .dark\:bg-slate-800,
+  .dark\:bg-slate-900,
+  .dark\:bg-slate-700 {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .border,
+  .border-slate-200,
+  .dark\:border-slate-700 {
+    border-color: #cbd5e1 !important;
+  }
+  .text-slate-500,
+  .text-slate-600,
+  .text-slate-700,
+  .text-slate-900,
+  .dark\:text-slate-100,
+  .dark\:text-slate-300,
+  .dark\:text-slate-400 {
+    color: #000 !important;
+  }
+  details > summary {
+    list-style: none;
+  }
+  details[open] > summary::after {
+    display: none;
+  }
+  details:not([open]) {
+    display: none;
+  }
+  main > * {
+    break-inside: avoid;
+  }
+}
+
+.print-only {
+  display: none;
+}

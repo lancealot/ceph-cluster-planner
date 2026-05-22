@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { WorkspaceProvider } from './state/workspace';
 import { ThemeProvider } from './state/theme';
 import { useAllIssues } from './state/useAllIssues';
+import { useShareLinkLoader } from './state/useShareLink';
 import { ComponentLibrary } from './components/ComponentLibrary';
 import { ImportExport } from './components/ImportExport';
 import { NodeBuilder } from './components/NodeBuilder';
@@ -24,6 +25,7 @@ const tabLabels: Record<Tab, string> = {
 };
 
 function ShellWithDrawer({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+  useShareLinkLoader();
   const issues = useAllIssues();
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
