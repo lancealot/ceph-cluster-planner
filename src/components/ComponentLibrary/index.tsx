@@ -1,8 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useLibrary } from '../../state/useLibrary';
+import { useWorkspace } from '../../state/workspace';
+import bundled from '../../data/components.json';
 import type { Component, ComponentCategory } from '../../types/components';
 import { format_power, format_usd } from '../../calc/units';
 import { FreshnessChip } from './FreshnessChip';
+import { CustomComponentForm } from './CustomComponentForm';
+
+const bundledList = bundled as Component[];
+const bundledIds = new Set(bundledList.map((c) => c.id));
 
 const categoryLabels: Record<ComponentCategory, string> = {
   chassis: 'Chassis',
@@ -52,7 +58,11 @@ function describeSpec(c: Component): string {
 
 export function ComponentLibrary() {
   const library = useLibrary();
+  const { workspace, upsertCustomComponent, deleteComponent, restoreComponent } = useWorkspace();
+
   const [filter, setFilter] = useState<ComponentCategory | 'all'>('all');
+  const [editing, setEditing] = useState<Component | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const grouped = useMemo(() => {
     const byCat = new Map<ComponentCategory, Component[]>();
@@ -70,29 +80,62 @@ export function ComponentLibrary() {
   const filteredCats = filter === 'all' ? categoryOrder : [filter];
   const totalCount = Object.keys(library).length;
 
+  const tombstoned = useMemo(() => {
+    const map = new Map(bundledList.map((c) => [c.id, c]));
+    return workspace.deleted_component_ids.map((id) => map.get(id)).filter(Boolean) as Component[];
+  }, [workspace.deleted_component_ids]);
+
+  function handleSubmit(c: Component) {
+    upsertCustomComponent(c);
+    setShowForm(false);
+    setEditing(null);
+  }
+
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
+    <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Component Library</h2>
           <p className="text-sm text-slate-600">
-            {totalCount} components · pricing as-of dates shown per row
+            {totalCount} components ({workspace.custom_components.length} custom) · pricing freshness shown per row
           </p>
         </div>
-        <select
-          aria-label="Filter components by category"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as ComponentCategory | 'all')}
-          className="border rounded px-2 py-1 text-sm bg-white"
-        >
-          <option value="all">All categories</option>
-          {categoryOrder.map((c) => (
-            <option key={c} value={c}>
-              {categoryLabels[c]}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2 items-center">
+          <select
+            aria-label="Filter components by category"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as ComponentCategory | 'all')}
+            className="border rounded px-2 py-1 text-sm bg-white"
+          >
+            <option value="all">All categories</option>
+            {categoryOrder.map((c) => (
+              <option key={c} value={c}>
+                {categoryLabels[c]}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => {
+              setEditing(null);
+              setShowForm((s) => !s);
+            }}
+            className="px-3 py-1 text-sm bg-slate-900 text-white rounded"
+          >
+            {showForm && !editing ? 'Close form' : '+ Custom component'}
+          </button>
+        </div>
       </div>
+
+      {(showForm || editing) ? (
+        <CustomComponentForm
+          initial={editing ?? undefined}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setShowForm(false);
+            setEditing(null);
+          }}
+        />
+      ) : null}
 
       <div className="space-y-6">
         {filteredCats.map((cat) => {
@@ -113,21 +156,46 @@ export function ComponentLibrary() {
                       <th className="px-3 py-2 font-medium text-right">Price</th>
                       <th className="px-3 py-2 font-medium text-right">Typ. W</th>
                       <th className="px-3 py-2 font-medium">Freshness</th>
+                      <th className="px-3 py-2 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((c) => (
-                      <tr key={c.id} className="border-t">
-                        <td className="px-3 py-2 text-slate-700">{c.vendor}</td>
-                        <td className="px-3 py-2 font-medium">{c.model}</td>
-                        <td className="px-3 py-2 text-slate-600">{describeSpec(c)}</td>
-                        <td className="px-3 py-2 text-right">{format_usd(c.price_usd)}</td>
-                        <td className="px-3 py-2 text-right">{format_power(c.watts_typical)}</td>
-                        <td className="px-3 py-2">
-                          <FreshnessChip date={c.as_of_date} />
-                        </td>
-                      </tr>
-                    ))}
+                    {items.map((c) => {
+                      const isBundled = bundledIds.has(c.id);
+                      const isCustom = workspace.custom_components.some((x) => x.id === c.id);
+                      return (
+                        <tr key={c.id} className="border-t">
+                          <td className="px-3 py-2 text-slate-700">{c.vendor}</td>
+                          <td className="px-3 py-2 font-medium">
+                            {c.model}
+                            {isCustom ? <span className="ml-1 text-[10px] uppercase bg-sky-100 text-sky-800 px-1 rounded">custom</span> : null}
+                          </td>
+                          <td className="px-3 py-2 text-slate-600">{describeSpec(c)}</td>
+                          <td className="px-3 py-2 text-right">{format_usd(c.price_usd)}</td>
+                          <td className="px-3 py-2 text-right">{format_power(c.watts_typical)}</td>
+                          <td className="px-3 py-2">
+                            <FreshnessChip date={c.as_of_date} />
+                          </td>
+                          <td className="px-3 py-2 text-right space-x-1">
+                            {isCustom ? (
+                              <button
+                                onClick={() => setEditing(c)}
+                                className="text-xs px-2 py-0.5 bg-slate-200 rounded"
+                              >
+                                Edit
+                              </button>
+                            ) : null}
+                            <button
+                              onClick={() => deleteComponent(c.id, isBundled && !isCustom)}
+                              className="text-xs px-2 py-0.5 bg-rose-100 text-rose-800 rounded"
+                              title={isBundled && !isCustom ? 'Tombstone bundled component (restorable)' : 'Delete custom component'}
+                            >
+                              {isBundled && !isCustom ? 'Hide' : 'Delete'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -135,6 +203,35 @@ export function ComponentLibrary() {
           );
         })}
       </div>
+
+      {tombstoned.length > 0 ? (
+        <section>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-2">
+            Hidden bundled components ({tombstoned.length})
+          </h3>
+          <div className="bg-white rounded border overflow-hidden">
+            <table className="w-full text-sm">
+              <tbody>
+                {tombstoned.map((c) => (
+                  <tr key={c.id} className="border-t">
+                    <td className="px-3 py-2 text-slate-500">
+                      {c.vendor} {c.model} ({categoryLabels[c.category]})
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <button
+                        onClick={() => restoreComponent(c.id)}
+                        className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded"
+                      >
+                        Restore
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

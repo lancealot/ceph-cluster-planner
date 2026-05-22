@@ -6,6 +6,7 @@ import { ImportExport } from './components/ImportExport';
 import { NodeBuilder } from './components/NodeBuilder';
 import { RackBuilder } from './components/RackBuilder';
 import { ClusterView } from './components/ClusterView';
+import { ScenarioManager } from './components/ScenarioManager';
 import { WarningsDrawer } from './components/Common/WarningsDrawer';
 
 const tabs = ['components', 'nodes', 'racks', 'cluster', 'scenarios'] as const;
@@ -18,15 +19,6 @@ const tabLabels: Record<Tab, string> = {
   cluster: 'Cluster',
   scenarios: 'Scenarios',
 };
-
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div className="p-8 text-slate-500 max-w-3xl">
-      <h2 className="text-xl font-semibold mb-2 text-slate-700">{name}</h2>
-      <p>This tab will land in a later phase of the build.</p>
-    </div>
-  );
-}
 
 function ShellWithDrawer({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
   const issues = useAllIssues();
@@ -64,7 +56,7 @@ function ShellWithDrawer({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }
         {tab === 'nodes' && <NodeBuilder />}
         {tab === 'racks' && <RackBuilder />}
         {tab === 'cluster' && <ClusterView />}
-        {tab === 'scenarios' && <Placeholder name={tabLabels[tab]} />}
+        {tab === 'scenarios' && <ScenarioManager />}
       </main>
       <WarningsDrawer issues={issues} />
     </div>

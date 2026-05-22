@@ -11,6 +11,7 @@ import type { Workspace } from '../types/scenario';
 import type { NodeConfig } from '../types/node';
 import type { RackConfig } from '../types/rack';
 import type { ClusterConfig } from '../types/cluster';
+import type { Component } from '../types/components';
 import { emptyWorkspace } from './defaults';
 
 const STORAGE_KEY = 'ccp.v1.workspace';
@@ -22,7 +23,10 @@ export type WorkspaceAction =
   | { type: 'delete_node'; id: string }
   | { type: 'upsert_rack'; rack: RackConfig }
   | { type: 'delete_rack'; id: string }
-  | { type: 'update_cluster'; cluster: ClusterConfig };
+  | { type: 'update_cluster'; cluster: ClusterConfig }
+  | { type: 'upsert_custom_component'; component: Component }
+  | { type: 'delete_component'; id: string; isBundled: boolean }
+  | { type: 'restore_component'; id: string };
 
 function reducer(state: Workspace, action: WorkspaceAction): Workspace {
   switch (action.type) {
@@ -62,6 +66,37 @@ function reducer(state: Workspace, action: WorkspaceAction): Workspace {
     }
     case 'update_cluster':
       return { ...state, cluster: action.cluster };
+    case 'upsert_custom_component': {
+      const idx = state.custom_components.findIndex((c) => c.id === action.component.id);
+      const custom =
+        idx >= 0
+          ? state.custom_components.map((c, i) => (i === idx ? action.component : c))
+          : [...state.custom_components, action.component];
+      return {
+        ...state,
+        custom_components: custom,
+        deleted_component_ids: state.deleted_component_ids.filter((id) => id !== action.component.id),
+      };
+    }
+    case 'delete_component': {
+      if (action.isBundled) {
+        return {
+          ...state,
+          deleted_component_ids: state.deleted_component_ids.includes(action.id)
+            ? state.deleted_component_ids
+            : [...state.deleted_component_ids, action.id],
+        };
+      }
+      return {
+        ...state,
+        custom_components: state.custom_components.filter((c) => c.id !== action.id),
+      };
+    }
+    case 'restore_component':
+      return {
+        ...state,
+        deleted_component_ids: state.deleted_component_ids.filter((id) => id !== action.id),
+      };
     default:
       return state;
   }
@@ -88,6 +123,9 @@ interface Ctx {
   upsertRack: (r: RackConfig) => void;
   deleteRack: (id: string) => void;
   updateCluster: (c: ClusterConfig) => void;
+  upsertCustomComponent: (c: Component) => void;
+  deleteComponent: (id: string, isBundled: boolean) => void;
+  restoreComponent: (id: string) => void;
 }
 
 const WorkspaceContext = createContext<Ctx | null>(null);
@@ -108,10 +146,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const upsertRack = useCallback((r: RackConfig) => dispatch({ type: 'upsert_rack', rack: r }), []);
   const deleteRack = useCallback((id: string) => dispatch({ type: 'delete_rack', id }), []);
   const updateCluster = useCallback((c: ClusterConfig) => dispatch({ type: 'update_cluster', cluster: c }), []);
+  const upsertCustomComponent = useCallback(
+    (c: Component) => dispatch({ type: 'upsert_custom_component', component: c }),
+    []
+  );
+  const deleteComponent = useCallback(
+    (id: string, isBundled: boolean) => dispatch({ type: 'delete_component', id, isBundled }),
+    []
+  );
+  const restoreComponent = useCallback((id: string) => dispatch({ type: 'restore_component', id }), []);
 
   return (
     <WorkspaceContext.Provider
-      value={{ workspace, dispatch, upsertNode, deleteNode, upsertRack, deleteRack, updateCluster }}
+      value={{
+        workspace,
+        dispatch,
+        upsertNode,
+        deleteNode,
+        upsertRack,
+        deleteRack,
+        updateCluster,
+        upsertCustomComponent,
+        deleteComponent,
+        restoreComponent,
+      }}
     >
       {children}
     </WorkspaceContext.Provider>
