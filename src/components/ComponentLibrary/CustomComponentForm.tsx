@@ -164,6 +164,71 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         </label>
       </div>
 
+      {draft.category === 'chassis' ? (
+        <div className="grid grid-cols-6 gap-2">
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">RU</div>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={num(d.ru)}
+              onChange={(e) => patchAny('ru', Math.max(1, parseInt(e.target.value) || 1))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">LFF bays</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.drive_bays_lff)}
+              onChange={(e) => patchAny('drive_bays_lff', Math.max(0, parseInt(e.target.value) || 0))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">SFF bays</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.drive_bays_sff)}
+              onChange={(e) => patchAny('drive_bays_sff', Math.max(0, parseInt(e.target.value) || 0))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">NVMe bays</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.drive_bays_nvme)}
+              onChange={(e) => patchAny('drive_bays_nvme', Math.max(0, parseInt(e.target.value) || 0))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe slots</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.pcie_slots)}
+              onChange={(e) => patchAny('pcie_slots', Math.max(0, parseInt(e.target.value) || 0))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+          <label>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Max PSU (W)</div>
+            <input
+              type="number"
+              min={0}
+              value={num(d.max_psu_w)}
+              onChange={(e) => patchAny('max_psu_w', Math.max(0, parseInt(e.target.value) || 0))}
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
+            />
+          </label>
+        </div>
+      ) : null}
       {draft.category === 'hdd' || draft.category === 'nvme_ssd' || draft.category === 'sata_ssd' ? (
         <div className="grid grid-cols-3 gap-2">
           <label>
