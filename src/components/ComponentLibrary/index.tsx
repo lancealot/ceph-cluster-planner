@@ -6,6 +6,7 @@ import type { Component, ComponentCategory } from '../../types/components';
 import { format_power, format_usd } from '../../calc/units';
 import { FreshnessChip } from './FreshnessChip';
 import { CustomComponentForm } from './CustomComponentForm';
+import { FreshnessBanner } from '../Common/FreshnessBanner';
 
 const bundledList = bundled as Component[];
 const bundledIds = new Set(bundledList.map((c) => c.id));
@@ -93,6 +94,7 @@ export function ComponentLibrary() {
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
+      <FreshnessBanner />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Component Library</h2>

@@ -8,6 +8,7 @@ import { RackBuilder } from './components/RackBuilder';
 import { ClusterView } from './components/ClusterView';
 import { ScenarioManager } from './components/ScenarioManager';
 import { WarningsDrawer } from './components/Common/WarningsDrawer';
+import { Disclaimers } from './components/Common/Disclaimers';
 
 const tabs = ['components', 'nodes', 'racks', 'cluster', 'scenarios'] as const;
 type Tab = (typeof tabs)[number];
@@ -24,10 +25,13 @@ function ShellWithDrawer({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }
   const issues = useAllIssues();
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b bg-white px-4 py-3 flex items-center justify-between">
-        <div>
+      <header className="border-b bg-white px-4 py-3 flex items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-lg font-semibold">Ceph Cluster Planner</h1>
           <p className="text-xs text-slate-500">Build configurations bottom-up, see all derived math.</p>
+          <div className="mt-1">
+            <Disclaimers />
+          </div>
         </div>
         <ImportExport />
       </header>
