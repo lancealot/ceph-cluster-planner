@@ -7,8 +7,8 @@ export const DISCLAIMERS = [
 
 export function Disclaimers() {
   return (
-    <details className="text-xs text-slate-600">
-      <summary className="cursor-pointer text-slate-700 hover:text-slate-900 font-medium">
+    <details className="text-xs text-slate-600 dark:text-slate-400">
+      <summary className="cursor-pointer text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium">
         Disclaimers (read before procurement)
       </summary>
       <ol className="list-decimal pl-5 mt-1 space-y-1">

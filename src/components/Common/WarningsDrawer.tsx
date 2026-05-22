@@ -24,23 +24,23 @@ export function WarningsDrawer({ issues }: Props) {
   );
 
   return (
-    <footer className="border-t bg-white shrink-0">
+    <footer className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full px-4 py-2 text-sm flex justify-between items-center hover:bg-slate-50"
+        className="w-full px-4 py-2 text-sm flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700"
         aria-expanded={open}
       >
         <span className="font-medium">
           Validation:{' '}
-          <span className="text-rose-700">{counts.error} errors</span> ·{' '}
-          <span className="text-amber-700">{counts.warning} warnings</span>
-          {counts.info > 0 ? <> · <span className="text-sky-700">{counts.info} info</span></> : null}
+          <span className="text-rose-700 dark:text-rose-300">{counts.error} errors</span> ·{' '}
+          <span className="text-amber-700 dark:text-amber-300">{counts.warning} warnings</span>
+          {counts.info > 0 ? <> · <span className="text-sky-700 dark:text-sky-300">{counts.info} info</span></> : null}
         </span>
         <span aria-hidden>{open ? '▼' : '▲'}</span>
       </button>
       {open ? (
-        <div className="p-3 border-t max-h-72 overflow-y-auto">
+        <div className="p-3 border-t border-slate-200 dark:border-slate-700 max-h-72 overflow-y-auto">
           <div className="mb-2 flex gap-1">
             {FILTERS.map((f) => (
               <button
@@ -48,7 +48,7 @@ export function WarningsDrawer({ issues }: Props) {
                 type="button"
                 onClick={() => setFilter(f)}
                 className={`text-xs px-2 py-1 rounded ${
-                  filter === f ? 'bg-slate-900 text-white' : 'bg-slate-200 hover:bg-slate-300'
+                  filter === f ? 'bg-slate-900 text-white' : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'
                 }`}
               >
                 {f}

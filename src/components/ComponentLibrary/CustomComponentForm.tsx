@@ -80,15 +80,15 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
   const str = (v: unknown) => (typeof v === 'string' ? v : '');
 
   return (
-    <form onSubmit={submit} className="bg-white border rounded p-3 space-y-2 text-sm">
+    <form onSubmit={submit} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2 text-sm">
       <h4 className="text-sm font-semibold">{initial ? 'Edit custom component' : 'Add custom component'}</h4>
       <div className="grid grid-cols-4 gap-2">
         <label>
-          <div className="text-xs text-slate-500">Category</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Category</div>
           <select
             value={draft.category}
             onChange={(e) => changeCategory(e.target.value as ComponentCategory)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             disabled={!!initial}
           >
             {CATEGORIES.map((c) => (
@@ -99,67 +99,67 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
           </select>
         </label>
         <label>
-          <div className="text-xs text-slate-500">ID</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">ID</div>
           <input
             value={draft.id}
             onChange={(e) => patch('id', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             disabled={!!initial}
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">Vendor</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Vendor</div>
           <input
             value={draft.vendor}
             onChange={(e) => patch('vendor', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">Model</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Model</div>
           <input
             value={draft.model}
             onChange={(e) => patch('model', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">Price (USD)</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Price (USD)</div>
           <input
             type="number"
             min={0}
             value={draft.price_usd}
             onChange={(e) => patch('price_usd', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">Watts (typ)</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Watts (typ)</div>
           <input
             type="number"
             min={0}
             value={draft.watts_typical}
             onChange={(e) => patch('watts_typical', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">Watts (max)</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Watts (max)</div>
           <input
             type="number"
             min={0}
             value={draft.watts_max}
             onChange={(e) => patch('watts_max', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
         <label>
-          <div className="text-xs text-slate-500">As-of date</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">As-of date</div>
           <input
             type="date"
             value={draft.as_of_date}
             onChange={(e) => patch('as_of_date', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white"
+            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
           />
         </label>
       </div>
@@ -167,30 +167,30 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
       {draft.category === 'hdd' || draft.category === 'nvme_ssd' || draft.category === 'sata_ssd' ? (
         <div className="grid grid-cols-3 gap-2">
           <label>
-            <div className="text-xs text-slate-500">Capacity (TB)</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Capacity (TB)</div>
             <input
               type="number"
               step={0.01}
               min={0}
               value={num(d.capacity_tb)}
               onChange={(e) => patchAny('capacity_tb', parseFloat(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
           <label>
-            <div className="text-xs text-slate-500">Form factor</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Form factor</div>
             <input
               value={str(d.form_factor)}
               onChange={(e) => patchAny('form_factor', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
           <label>
-            <div className="text-xs text-slate-500">Interface</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Interface</div>
             <input
               value={str(d.interface)}
               onChange={(e) => patchAny('interface', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
         </div>
@@ -198,31 +198,31 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
       {draft.category === 'cpu' ? (
         <div className="grid grid-cols-3 gap-2">
           <label>
-            <div className="text-xs text-slate-500">Cores</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Cores</div>
             <input
               type="number"
               min={0}
               value={num(d.cores)}
               onChange={(e) => patchAny('cores', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
           <label>
-            <div className="text-xs text-slate-500">TDP (W)</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">TDP (W)</div>
             <input
               type="number"
               min={0}
               value={num(d.tdp_w)}
               onChange={(e) => patchAny('tdp_w', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
           <label>
-            <div className="text-xs text-slate-500">Socket</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Socket</div>
             <input
               value={str(d.socket)}
               onChange={(e) => patchAny('socket', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
         </div>
@@ -230,23 +230,23 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
       {draft.category === 'ram' ? (
         <div className="grid grid-cols-2 gap-2">
           <label>
-            <div className="text-xs text-slate-500">Capacity (GB)</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Capacity (GB)</div>
             <input
               type="number"
               min={0}
               value={num(d.capacity_gb)}
               onChange={(e) => patchAny('capacity_gb', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
           <label>
-            <div className="text-xs text-slate-500">Speed (MHz)</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Speed (MHz)</div>
             <input
               type="number"
               min={0}
               value={num(d.speed_mhz)}
               onChange={(e) => patchAny('speed_mhz', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             />
           </label>
         </div>
@@ -257,12 +257,12 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
           {initial ? 'Save' : 'Add'}
         </button>
         {onCancel ? (
-          <button type="button" onClick={onCancel} className="px-3 py-1 text-sm bg-slate-200 rounded">
+          <button type="button" onClick={onCancel} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
             Cancel
           </button>
         ) : null}
       </div>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-500 dark:text-slate-400">
         Common fields cover most validation; advanced category-specific fields (chassis bays, PCIe lanes, etc.) can be tuned by editing the exported JSON until the editor is expanded in a later release.
       </p>
     </form>

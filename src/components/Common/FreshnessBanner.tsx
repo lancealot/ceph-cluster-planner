@@ -26,10 +26,10 @@ export function FreshnessBanner({ now = new Date() }: { now?: Date } = {}) {
 
   const tone =
     stats.stale > 0
-      ? 'bg-rose-50 border-rose-200 text-rose-900'
+      ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-200 text-rose-900 dark:text-rose-200'
       : stats.aging > 0
-      ? 'bg-amber-50 border-amber-200 text-amber-900'
-      : 'bg-emerald-50 border-emerald-200 text-emerald-900';
+      ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 text-amber-900 dark:text-amber-200'
+      : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 text-emerald-900 dark:text-emerald-200';
 
   return (
     <div className={`border rounded p-2 text-sm ${tone}`}>

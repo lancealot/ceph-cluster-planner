@@ -29,10 +29,10 @@ function downloadScenario(s: Scenario) {
 
 function DeltaRow({ label, value, format }: { label: string; value: number; format: (n: number) => string }) {
   const sign = value > 0 ? '+' : value < 0 ? '−' : '';
-  const cls = value > 0 ? 'text-emerald-700' : value < 0 ? 'text-rose-700' : 'text-slate-600';
+  const cls = value > 0 ? 'text-emerald-700 dark:text-emerald-300' : value < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400';
   return (
     <tr className="border-t">
-      <td className="px-2 py-1 text-slate-600">{label}</td>
+      <td className="px-2 py-1 text-slate-600 dark:text-slate-400">{label}</td>
       <td className={`px-2 py-1 text-right font-mono ${cls}`}>
         {sign}{format(Math.abs(value))}
       </td>
@@ -42,10 +42,10 @@ function DeltaRow({ label, value, format }: { label: string; value: number; form
 
 function DiffPanel({ result }: { result: ScenarioDiff }) {
   return (
-    <div className="bg-white border rounded p-3 space-y-3">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
       <h4 className="text-sm font-semibold">
-        Diff: <span className="text-slate-500">{result.base_name}</span> →{' '}
-        <span className="text-slate-900">{result.compare_name}</span>
+        Diff: <span className="text-slate-500 dark:text-slate-400">{result.base_name}</span> →{' '}
+        <span className="text-slate-900 dark:text-slate-100">{result.compare_name}</span>
       </h4>
       <table className="w-full text-sm">
         <tbody>
@@ -61,11 +61,11 @@ function DiffPanel({ result }: { result: ScenarioDiff }) {
       </table>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <h5 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Warnings introduced</h5>
+          <h5 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Warnings introduced</h5>
           <WarningsList issues={result.warnings_introduced} empty="None new." />
         </div>
         <div>
-          <h5 className="text-xs uppercase tracking-wide text-slate-500 mb-1">Warnings resolved</h5>
+          <h5 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Warnings resolved</h5>
           <WarningsList issues={result.warnings_resolved} empty="None resolved." />
         </div>
       </div>
@@ -130,22 +130,22 @@ export function ScenarioManager() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto space-y-4">
-      <div className="bg-white border rounded p-3 space-y-3">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
         <h4 className="text-sm font-semibold">Save current workspace</h4>
         <div className="flex gap-2">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={`Scenario ${scenarios.length + 1}`}
-            className="border rounded px-2 py-1 text-sm flex-1 bg-white"
+            className="border rounded px-2 py-1 text-sm flex-1 bg-white dark:bg-slate-800"
           />
           <button onClick={saveCurrent} className="px-3 py-1 text-sm bg-slate-900 text-white rounded">
             Save snapshot
           </button>
-          <button onClick={loadBundled} className="px-3 py-1 text-sm bg-slate-200 rounded">
+          <button onClick={loadBundled} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
             Load SC846 reference
           </button>
-          <label className="px-3 py-1 text-sm bg-slate-200 rounded cursor-pointer">
+          <label className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded cursor-pointer">
             Import .json
             <input
               type="file"
@@ -160,9 +160,9 @@ export function ScenarioManager() {
           </label>
         </div>
         {importMessage ? (
-          <pre className="text-xs text-rose-700 whitespace-pre-wrap">{importMessage}</pre>
+          <pre className="text-xs text-rose-700 dark:text-rose-300 whitespace-pre-wrap">{importMessage}</pre>
         ) : null}
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Current workspace: {currentComputed.cluster.total_node_count} nodes ·{' '}
           {format_bytes(currentComputed.cluster.total_usable_bytes)} usable ·{' '}
           {format_usd(currentComputed.cluster.total_cost_usd)} ·{' '}
@@ -171,13 +171,13 @@ export function ScenarioManager() {
         </p>
       </div>
 
-      <div className="bg-white border rounded p-3 space-y-2">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2">
         <h4 className="text-sm font-semibold">Saved scenarios ({scenarios.length})</h4>
         {scenarios.length === 0 ? (
-          <p className="text-sm text-slate-500">No saved scenarios yet.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No saved scenarios yet.</p>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-left">
               <tr>
                 <th className="px-2 py-1">Name</th>
                 <th className="px-2 py-1">Saved</th>
@@ -194,15 +194,15 @@ export function ScenarioManager() {
                       className="border-0 bg-transparent text-sm w-full focus:bg-white focus:border focus:px-1"
                     />
                   </td>
-                  <td className="px-2 py-1 text-slate-500 font-mono text-xs">{s.created_at.slice(0, 19)}</td>
+                  <td className="px-2 py-1 text-slate-500 dark:text-slate-400 font-mono text-xs">{s.created_at.slice(0, 19)}</td>
                   <td className="px-2 py-1 text-right space-x-1">
-                    <button onClick={() => loadScenario(s.id)} className="text-xs px-2 py-1 bg-slate-200 rounded">
+                    <button onClick={() => loadScenario(s.id)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">
                       Load
                     </button>
-                    <button onClick={() => downloadScenario(s)} className="text-xs px-2 py-1 bg-slate-200 rounded">
+                    <button onClick={() => downloadScenario(s)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">
                       Export
                     </button>
-                    <button onClick={() => remove(s.id)} className="text-xs px-2 py-1 bg-rose-100 text-rose-800 rounded">
+                    <button onClick={() => remove(s.id)} className="text-xs px-2 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded">
                       Delete
                     </button>
                   </td>
@@ -213,15 +213,15 @@ export function ScenarioManager() {
         )}
       </div>
 
-      <div className="bg-white border rounded p-3 space-y-3">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
         <h4 className="text-sm font-semibold">Compare two scenarios</h4>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm">
-            <div className="text-xs text-slate-500">Base</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Base</div>
             <select
               value={baseId}
               onChange={(e) => setBaseId(e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             >
               <option value="">— select —</option>
               {scenarios.map((s) => (
@@ -232,11 +232,11 @@ export function ScenarioManager() {
             </select>
           </label>
           <label className="text-sm">
-            <div className="text-xs text-slate-500">Compare</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Compare</div>
             <select
               value={compareId}
               onChange={(e) => setCompareId(e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white"
+              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
             >
               <option value="">— select —</option>
               {scenarios.map((s) => (
@@ -248,7 +248,7 @@ export function ScenarioManager() {
           </label>
         </div>
         {diffResult ? <DiffPanel result={diffResult} /> : (
-          <p className="text-xs text-slate-500">Pick two different scenarios to see deltas.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Pick two different scenarios to see deltas.</p>
         )}
       </div>
     </div>
