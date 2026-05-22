@@ -4,17 +4,17 @@ import { format_bytes, format_power, format_usd } from '../../calc/units';
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="text-sm font-semibold text-slate-900">{value}</div>
-      {hint ? <div className="text-xs text-slate-500">{hint}</div> : null}
+      <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</div>
+      {hint ? <div className="text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
     </div>
   );
 }
 
 export function NodeDerivedPanel({ derived }: { derived: NodeDerived }) {
   return (
-    <div className="bg-white border rounded p-3 space-y-3">
-      <h4 className="text-sm font-semibold text-slate-700">Derived values</h4>
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
+      <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Derived values</h4>
       <div className="grid grid-cols-2 gap-3">
         <Stat
           label="OSDs"

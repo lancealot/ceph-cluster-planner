@@ -25,7 +25,7 @@ export function ComponentPicker({ library, categories, value, onChange, placehol
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="border rounded px-2 py-1 text-sm bg-white w-full"
+      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 w-full"
     >
       <option value="">{placeholder ?? '— select —'}</option>
       {options.map((c) => (

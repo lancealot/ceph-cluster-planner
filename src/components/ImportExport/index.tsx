@@ -55,11 +55,11 @@ export function ImportExport() {
       <button
         type="button"
         onClick={exportWorkspace}
-        className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded text-sm"
+        className="px-3 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded text-sm"
       >
         Export JSON
       </button>
-      <label className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded text-sm cursor-pointer">
+      <label className="px-3 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded text-sm cursor-pointer">
         Import JSON
         <input
           ref={inputRef}

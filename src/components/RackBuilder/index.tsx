@@ -20,8 +20,8 @@ function Bar({ used, capacity, color }: { used: number; capacity: number; color:
   const pct = capacity > 0 ? Math.min(100, (used / capacity) * 100) : 0;
   const over = used > capacity;
   return (
-    <div className="w-full h-3 bg-slate-200 rounded overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={used}>
-      <div className={`h-full ${over ? 'bg-rose-500' : color}`} style={{ width: `${pct}%` }} />
+    <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={used}>
+      <div className={`h-full ${over ? 'bg-rose-50 dark:bg-rose-900/200' : color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -60,18 +60,18 @@ export function RackBuilder() {
         <button onClick={startNew} className="px-2 py-1 text-sm bg-slate-900 text-white rounded w-full">
           + New rack
         </button>
-        <ul className="bg-white border rounded divide-y">
+        <ul className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded divide-y">
           {workspace.racks.length === 0 ? (
-            <li className="p-3 text-sm text-slate-500">No rack configs yet.</li>
+            <li className="p-3 text-sm text-slate-500 dark:text-slate-400">No rack configs yet.</li>
           ) : (
             workspace.racks.map((r) => (
               <li
                 key={r.id}
-                className={`p-2 cursor-pointer hover:bg-slate-50 ${selectedId === r.id ? 'bg-slate-100' : ''}`}
+                className={`p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 ${selectedId === r.id ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                 onClick={() => setSelectedId(r.id)}
               >
                 <div className="text-sm font-medium truncate">{r.name || '(unnamed)'}</div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   {r.ru_capacity} RU · {(r.power_capacity_w / 1000).toFixed(1)} kW
                 </div>
               </li>
@@ -82,30 +82,30 @@ export function RackBuilder() {
 
       <section>
         {!selected ? (
-          <div className="text-sm text-slate-500 p-4">Select a rack or create one.</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400 p-4">Select a rack or create one.</div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-end gap-3">
               <div className="flex-1">
-                <label className="block text-xs uppercase tracking-wide text-slate-500">Name</label>
+                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</label>
                 <input
                   value={selected.name}
                   onChange={(e) => update({ name: e.target.value })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white"
+                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                 />
               </div>
               <div className="w-24">
-                <label className="block text-xs uppercase tracking-wide text-slate-500">RU cap</label>
+                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">RU cap</label>
                 <input
                   type="number"
                   min={1}
                   value={selected.ru_capacity}
                   onChange={(e) => update({ ru_capacity: Math.max(1, parseInt(e.target.value) || 1) })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white"
+                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                 />
               </div>
               <div className="w-32">
-                <label className="block text-xs uppercase tracking-wide text-slate-500">Power (W)</label>
+                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Power (W)</label>
                 <input
                   type="number"
                   min={0}
@@ -113,7 +113,7 @@ export function RackBuilder() {
                   onChange={(e) =>
                     update({ power_capacity_w: Math.max(0, parseInt(e.target.value) || 0) })
                   }
-                  className="border rounded px-2 py-1 text-sm w-full bg-white"
+                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                 />
               </div>
               <button
@@ -121,16 +121,16 @@ export function RackBuilder() {
                   deleteRack(selected.id);
                   setSelectedId(null);
                 }}
-                className="px-2 py-1 text-sm bg-rose-100 text-rose-800 rounded"
+                className="px-2 py-1 text-sm bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded"
               >
                 Delete
               </button>
             </div>
 
-            <div className="bg-white border rounded p-3 space-y-3">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
               <h4 className="text-sm font-semibold">Nodes in rack</h4>
               {selected.nodes.length === 0 ? (
-                <p className="text-xs text-slate-500">No nodes yet. Add some from the dropdown below.</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">No nodes yet. Add some from the dropdown below.</p>
               ) : (
                 selected.nodes.map((slot, idx) => (
                   <div key={idx} className="grid grid-cols-[1fr_4rem_2rem] gap-1 items-end">
@@ -143,7 +143,7 @@ export function RackBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     >
                       <option value="">— select node config —</option>
                       {workspace.nodes.map((n) => (
@@ -163,11 +163,11 @@ export function RackBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     />
                     <button
                       onClick={() => update({ nodes: selected.nodes.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 text-sm"
+                      className="text-rose-700 dark:text-rose-300 text-sm"
                       aria-label="Remove node slot"
                     >
                       ✕
@@ -181,7 +181,7 @@ export function RackBuilder() {
                     nodes: [...selected.nodes, { node_config_id: workspace.nodes[0]?.id ?? '', count: 1 }],
                   })
                 }
-                className="text-sm text-sky-700 hover:underline"
+                className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
                 disabled={workspace.nodes.length === 0}
               >
                 + Add node slot
@@ -189,51 +189,51 @@ export function RackBuilder() {
             </div>
 
             {derived ? (
-              <div className="bg-white border rounded p-3 space-y-3">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
                 <h4 className="text-sm font-semibold">Derived</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>RU used</span>
                       <span>
                         {derived.ru_used} / {derived.ru_capacity}
                       </span>
                     </div>
-                    <Bar used={derived.ru_used} capacity={derived.ru_capacity} color="bg-sky-500" />
+                    <Bar used={derived.ru_used} capacity={derived.ru_capacity} color="bg-sky-50 dark:bg-sky-900/200" />
                   </div>
                   <div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                       <span>Power (max)</span>
                       <span>
                         {format_power(derived.power_max_w)} / {format_power(derived.power_capacity_w)}
                       </span>
                     </div>
-                    <Bar used={derived.power_max_w} capacity={derived.power_capacity_w} color="bg-emerald-500" />
+                    <Bar used={derived.power_max_w} capacity={derived.power_capacity_w} color="bg-emerald-50 dark:bg-emerald-900/200" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-slate-500">Nodes:</span> {derived.node_count}
+                    <span className="text-slate-500 dark:text-slate-400">Nodes:</span> {derived.node_count}
                   </div>
                   <div>
-                    <span className="text-slate-500">OSDs:</span> {derived.total_osd_count}
+                    <span className="text-slate-500 dark:text-slate-400">OSDs:</span> {derived.total_osd_count}
                   </div>
                   <div>
-                    <span className="text-slate-500">Raw capacity:</span> {format_bytes(derived.total_raw_bytes)}
+                    <span className="text-slate-500 dark:text-slate-400">Raw capacity:</span> {format_bytes(derived.total_raw_bytes)}
                   </div>
                   <div>
-                    <span className="text-slate-500">Cost:</span> {format_usd(derived.cost_usd)}
+                    <span className="text-slate-500 dark:text-slate-400">Cost:</span> {format_usd(derived.cost_usd)}
                   </div>
                 </div>
                 <div className="text-sm">
-                  <span className="text-slate-500">Binding constraint: </span>
+                  <span className="text-slate-500 dark:text-slate-400">Binding constraint: </span>
                   <span
                     className={`font-semibold ${
                       derived.binding_constraint === 'power'
-                        ? 'text-emerald-700'
+                        ? 'text-emerald-700 dark:text-emerald-300'
                         : derived.binding_constraint === 'ru'
-                        ? 'text-sky-700'
-                        : 'text-slate-600'
+                        ? 'text-sky-700 dark:text-sky-300'
+                        : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     {derived.binding_constraint}
@@ -243,7 +243,7 @@ export function RackBuilder() {
               </div>
             ) : null}
 
-            <div className="bg-white border rounded p-3">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3">
               <h4 className="text-sm font-semibold mb-2">Validation</h4>
               <WarningsList issues={issues} empty="No issues — rack is clean." />
             </div>

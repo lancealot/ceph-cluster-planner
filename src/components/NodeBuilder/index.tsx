@@ -70,25 +70,25 @@ export function NodeBuilder() {
           <button onClick={startNew} className="px-2 py-1 text-sm bg-slate-900 text-white rounded">
             + New
           </button>
-          <button onClick={() => loadFixture('hdd')} className="px-2 py-1 text-sm bg-slate-200 rounded">
+          <button onClick={() => loadFixture('hdd')} className="px-2 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
             Load SC846 ref (HDD)
           </button>
-          <button onClick={() => loadFixture('meta')} className="px-2 py-1 text-sm bg-slate-200 rounded">
+          <button onClick={() => loadFixture('meta')} className="px-2 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
             + metadata variant
           </button>
         </div>
-        <ul className="bg-white border rounded divide-y">
+        <ul className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded divide-y">
           {workspace.nodes.length === 0 ? (
-            <li className="p-3 text-sm text-slate-500">No node configs yet. Click + New or load a reference.</li>
+            <li className="p-3 text-sm text-slate-500 dark:text-slate-400">No node configs yet. Click + New or load a reference.</li>
           ) : (
             workspace.nodes.map((n) => (
               <li
                 key={n.id}
-                className={`p-2 cursor-pointer hover:bg-slate-50 ${selectedId === n.id ? 'bg-slate-100' : ''}`}
+                className={`p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 ${selectedId === n.id ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                 onClick={() => setSelectedId(n.id)}
               >
                 <div className="text-sm font-medium truncate">{n.name || '(unnamed)'}</div>
-                <div className="text-xs text-slate-500 truncate">{n.role ?? 'node'}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{n.role ?? 'node'}</div>
               </li>
             ))
           )}
@@ -97,25 +97,25 @@ export function NodeBuilder() {
 
       <section>
         {!selected ? (
-          <div className="text-sm text-slate-500 p-4">Select a node on the left, or create one.</div>
+          <div className="text-sm text-slate-500 dark:text-slate-400 p-4">Select a node on the left, or create one.</div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-end justify-between gap-3">
               <div className="flex-1">
-                <label className="block text-xs uppercase tracking-wide text-slate-500">Name</label>
+                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</label>
                 <input
                   value={selected.name}
                   onChange={(e) => update({ name: e.target.value })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white"
+                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                 />
               </div>
               <div className="w-40">
-                <label className="block text-xs uppercase tracking-wide text-slate-500">Role tag</label>
+                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Role tag</label>
                 <input
                   value={selected.role ?? ''}
                   onChange={(e) => update({ role: e.target.value || undefined })}
                   placeholder="e.g. osd"
-                  className="border rounded px-2 py-1 text-sm w-full bg-white"
+                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                 />
               </div>
               <button
@@ -123,17 +123,17 @@ export function NodeBuilder() {
                   deleteNode(selected.id);
                   setSelectedId(null);
                 }}
-                className="px-2 py-1 text-sm bg-rose-100 text-rose-800 rounded"
+                className="px-2 py-1 text-sm bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded"
               >
                 Delete
               </button>
             </div>
 
             <div className="grid grid-cols-[1fr_1fr] gap-4">
-              <div className="bg-white border rounded p-3 space-y-3">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
                 <h4 className="text-sm font-semibold">Platform</h4>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Chassis</label>
+                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Chassis</label>
                   <ComponentPicker
                     library={library}
                     categories={['chassis']}
@@ -143,7 +143,7 @@ export function NodeBuilder() {
                 </div>
                 <div className="grid grid-cols-[1fr_5rem] gap-2">
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">CPU</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">CPU</label>
                     <ComponentPicker
                       library={library}
                       categories={['cpu']}
@@ -152,19 +152,19 @@ export function NodeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Sockets</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Sockets</label>
                     <input
                       type="number"
                       min={1}
                       value={selected.cpu_count}
                       onChange={(e) => update({ cpu_count: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white"
+                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-[1fr_5rem] gap-2">
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">RAM module</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RAM module</label>
                     <ComponentPicker
                       library={library}
                       categories={['ram']}
@@ -173,19 +173,19 @@ export function NodeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Count</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Count</label>
                     <input
                       type="number"
                       min={0}
                       value={selected.ram_module_count}
                       onChange={(e) => update({ ram_module_count: Math.max(0, parseInt(e.target.value) || 0) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white"
+                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-[1fr_5rem] gap-2">
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">PSU</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">PSU</label>
                     <ComponentPicker
                       library={library}
                       categories={['psu']}
@@ -194,19 +194,19 @@ export function NodeBuilder() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1">Count</label>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Count</label>
                     <input
                       type="number"
                       min={1}
                       value={selected.psu_count}
                       onChange={(e) => update({ psu_count: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white"
+                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white border rounded p-3 space-y-3">
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
                 <h4 className="text-sm font-semibold">Drives</h4>
                 {selected.drives.map((slot, idx) => (
                   <div key={idx} className="grid grid-cols-[1fr_6rem_4rem_2rem] gap-1 items-end">
@@ -229,7 +229,7 @@ export function NodeBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     >
                       {DRIVE_ROLES.map((r) => (
                         <option key={r} value={r}>
@@ -248,11 +248,11 @@ export function NodeBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     />
                     <button
                       onClick={() => update({ drives: selected.drives.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 text-sm"
+                      className="text-rose-700 dark:text-rose-300 text-sm"
                       aria-label="Remove drive slot"
                     >
                       ✕
@@ -263,7 +263,7 @@ export function NodeBuilder() {
                   onClick={() =>
                     update({ drives: [...selected.drives, { component_id: '', count: 1, role: 'osd' }] })
                   }
-                  className="text-sm text-sky-700 hover:underline"
+                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
                 >
                   + Add drive slot
                 </button>
@@ -290,11 +290,11 @@ export function NodeBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     />
                     <button
                       onClick={() => update({ hbas: selected.hbas.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 text-sm"
+                      className="text-rose-700 dark:text-rose-300 text-sm"
                       aria-label="Remove HBA"
                     >
                       ✕
@@ -303,7 +303,7 @@ export function NodeBuilder() {
                 ))}
                 <button
                   onClick={() => update({ hbas: [...selected.hbas, { component_id: '', count: 1 }] })}
-                  className="text-sm text-sky-700 hover:underline"
+                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
                 >
                   + Add HBA
                 </button>
@@ -330,11 +330,11 @@ export function NodeBuilder() {
                           ),
                         })
                       }
-                      className="border rounded px-2 py-1 text-sm bg-white"
+                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
                     />
                     <button
                       onClick={() => update({ nics: selected.nics.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 text-sm"
+                      className="text-rose-700 dark:text-rose-300 text-sm"
                       aria-label="Remove NIC"
                     >
                       ✕
@@ -343,7 +343,7 @@ export function NodeBuilder() {
                 ))}
                 <button
                   onClick={() => update({ nics: [...selected.nics, { component_id: '', count: 1 }] })}
-                  className="text-sm text-sky-700 hover:underline"
+                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
                 >
                   + Add NIC
                 </button>
@@ -352,7 +352,7 @@ export function NodeBuilder() {
 
             {derived ? <NodeDerivedPanel derived={derived} /> : null}
 
-            <div className="bg-white border rounded p-3">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3">
               <h4 className="text-sm font-semibold mb-2">Validation</h4>
               <WarningsList issues={issues} empty="No issues — node is clean." />
             </div>

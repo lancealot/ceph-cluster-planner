@@ -5,9 +5,9 @@ import { bytes_to_tb, format_bytes, format_power, format_usd } from '../../calc/
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="text-sm font-semibold text-slate-900">{value}</div>
-      {hint ? <div className="text-xs text-slate-500">{hint}</div> : null}
+      <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</div>
+      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{value}</div>
+      {hint ? <div className="text-xs text-slate-500 dark:text-slate-400">{hint}</div> : null}
     </div>
   );
 }
@@ -18,7 +18,7 @@ export function OutputsPanel({ derived, pools }: { derived: ClusterDerived; pool
   const wPerTb = usableTb > 0 ? derived.total_power_typical_w / usableTb : 0;
 
   return (
-    <div className="bg-white border rounded p-3 space-y-3">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
       <h4 className="text-sm font-semibold">Cluster outputs</h4>
       <div className="grid grid-cols-4 gap-3">
         <Stat label="Racks" value={`${derived.total_rack_count}`} />
@@ -32,9 +32,9 @@ export function OutputsPanel({ derived, pools }: { derived: ClusterDerived; pool
       </div>
       {pools.length > 0 ? (
         <div>
-          <h5 className="text-xs uppercase tracking-wide text-slate-500 mb-2">Per-pool usable</h5>
+          <h5 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Per-pool usable</h5>
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+            <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-left">
               <tr>
                 <th className="px-2 py-1">Pool</th>
                 <th className="px-2 py-1">Type</th>
@@ -51,7 +51,7 @@ export function OutputsPanel({ derived, pools }: { derived: ClusterDerived; pool
                 return (
                   <tr key={p.id} className="border-t">
                     <td className="px-2 py-1">{p.name}</td>
-                    <td className="px-2 py-1">{p.type === 'ec' ? `EC ${p.k}+${p.m}` : `replica ×${p.replicas}`}</td>
+                    <td className="px-2 py-1">{p.type === 'ec' ? `EC ${p.k ?? 8}+${p.m ?? 3}` : `replica ×${p.replicas ?? 3}`}</td>
                     <td className="px-2 py-1">{p.target_tier ?? '—'}</td>
                     <td className="px-2 py-1">{(p.capacity_share * 100).toFixed(1)}%</td>
                     <td className="px-2 py-1">{(pd.efficiency * 100).toFixed(1)}%</td>
@@ -64,7 +64,7 @@ export function OutputsPanel({ derived, pools }: { derived: ClusterDerived; pool
         </div>
       ) : null}
       {usableTb > 0 ? (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {format_power(wPerTb)} per TB usable typical · {format_bytes(derived.total_raw_bytes)} raw → {format_bytes(derived.total_usable_bytes)} usable across all pools.
         </p>
       ) : null}
