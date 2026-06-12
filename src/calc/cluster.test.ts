@@ -230,6 +230,22 @@ describe('EC 8+3 failure-domain edge cases (host)', () => {
   });
 });
 
+describe('OSD failure-domain with tier=ssd is treated as flash bucket', () => {
+  it('counts NVMe OSDs, not total (so HDD-only cluster errors)', () => {
+    const rack = rackOf(11, 'r'); // 11 hosts, 24 HDD OSD each => 264 HDD OSDs, 0 NVMe OSDs
+    const cluster: ClusterConfig = {
+      id: 'c',
+      name: 'c',
+      racks: [{ rack_config_id: rack.id, count: 1 }],
+      pools: [ecPool({ failure_domain: 'osd', target_tier: 'ssd' as 'nvme' })],
+      defaults: defaultClusterDefaults(),
+    };
+    const derived = deriveCluster(cluster, new Map([[rack.id, rack]]), nodeMap, lib);
+    const issues = validatePool(cluster, cluster.pools[0], derived);
+    expect(issues.find((i) => i.code === 'pool.failure_domain_too_few')).toBeDefined();
+  });
+});
+
 describe('Rack failure-domain validation', () => {
   it('3 racks vs EC 8+3 → error (3 < 11)', () => {
     const rack = rackOf(10, 'r');

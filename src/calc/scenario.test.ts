@@ -99,3 +99,21 @@ describe('Scenario diff: EC 8+3 vs 16+4', () => {
     expect(w).toBeDefined();
   });
 });
+
+describe('Diff uses each scenario\'s own embedded library', () => {
+  it('a price override saved into one scenario shows up in its cost, not the others', () => {
+    const cheap = buildSc846ReferenceScenario();
+    const expensive = buildSc846ReferenceScenario();
+    expensive.name = 'doubled-chassis variant';
+    const chassis = expensive.workspace.custom_components.find((c) => c.id === 'chassis-supermicro-sc846')
+      ?? { ...lib['chassis-supermicro-sc846']!, price_usd: 2500 };
+    expensive.workspace.custom_components = [
+      ...expensive.workspace.custom_components.filter((c) => c.id !== chassis.id),
+      { ...chassis, price_usd: chassis.price_usd * 2 },
+    ];
+    const result = diff(cheap, expensive, lib);
+    // 30 chassis × extra $2500 = $75,000 over the baseline.
+    expect(result.delta.cost_usd).toBeGreaterThanOrEqual(70000);
+    expect(result.delta.cost_usd).toBeLessThanOrEqual(80000);
+  });
+});
