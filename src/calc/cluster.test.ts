@@ -5,7 +5,7 @@ import { deriveCluster } from './cluster';
 import { validateCluster, validatePool } from './clusterValidation';
 import { bundledLibrary } from './test-helpers';
 import { defaultClusterDefaults } from '../state/defaults';
-import { SC846_HDD_ONLY } from './fixtures/sc846';
+import { SC846_HDD_ONLY, SC846_WITH_METADATA } from './fixtures/sc846';
 
 const EC_K = 8;
 const EC_M = 3;
@@ -121,24 +121,73 @@ describe('Multi-pool composition', () => {
   });
 });
 
-describe('Shares not summing to 1.0 fires cluster warning', () => {
-  it('warns when sum > 1.0', () => {
-    const rack = rackOf(10);
+describe('Per-tier capacity-share validation', () => {
+  function clusterWith(pools: PoolConfig[], useMetaNode = false): { cluster: ClusterConfig; issues: ReturnType<typeof validateCluster> } {
+    const rack: RackConfig = {
+      id: 'r1',
+      name: 'r1',
+      ru_capacity: 1000,
+      power_capacity_w: 1_000_000,
+      nodes: [{ node_config_id: useMetaNode ? SC846_WITH_METADATA.id : SC846_HDD_ONLY.id, count: 10 }],
+    };
     const cluster: ClusterConfig = {
       id: 'c',
       name: 'c',
       racks: [{ rack_config_id: rack.id, count: 1 }],
-      pools: [
-        ecPool({ id: 'a', capacity_share: 0.6 }),
-        ecPool({ id: 'b', capacity_share: 0.6 }),
-      ],
+      pools,
       defaults: defaultClusterDefaults(),
     };
-    const derived = deriveCluster(cluster, new Map([[rack.id, rack]]), nodeMap, lib);
-    const issues = validateCluster(cluster, derived);
+    const nm = new Map([
+      [SC846_HDD_ONLY.id, SC846_HDD_ONLY],
+      [SC846_WITH_METADATA.id, SC846_WITH_METADATA],
+    ]);
+    const derived = deriveCluster(cluster, new Map([[rack.id, rack]]), nm, lib);
+    return { cluster, issues: validateCluster(cluster, derived) };
+  }
+
+  it('warns when same-tier shares oversubscribe (0.6 + 0.6 hdd)', () => {
+    const { issues } = clusterWith([
+      ecPool({ id: 'a', capacity_share: 0.6 }),
+      ecPool({ id: 'b', capacity_share: 0.6 }),
+    ]);
     const w = issues.find((i) => i.code === 'cluster.capacity_share_not_one');
     expect(w).toBeDefined();
     expect(w?.severity).toBe('warning');
+    expect(w?.message).toContain('hdd-tier');
+  });
+
+  it('two pools on different tiers, each at 100%, are clean', () => {
+    const { issues } = clusterWith(
+      [
+        ecPool({ id: 'data', capacity_share: 1, target_tier: 'hdd' }),
+        {
+          id: 'meta',
+          name: 'meta',
+          type: 'replicated',
+          replicas: 3,
+          failure_domain: 'host',
+          capacity_share: 1,
+          target_tier: 'nvme',
+        },
+      ],
+      true
+    );
+    expect(issues.find((i) => i.code === 'cluster.capacity_share_not_one')).toBeUndefined();
+  });
+
+  it('a single untiered pool at 100% is clean', () => {
+    const { issues } = clusterWith([ecPool({ id: 'a', capacity_share: 1, target_tier: undefined })]);
+    expect(issues.find((i) => i.code === 'cluster.capacity_share_not_one')).toBeUndefined();
+  });
+
+  it('untiered share counts toward every tier (0.5 untiered + 1.0 hdd → over)', () => {
+    const { issues } = clusterWith([
+      ecPool({ id: 'a', capacity_share: 1, target_tier: 'hdd' }),
+      ecPool({ id: 'b', capacity_share: 0.5, target_tier: undefined }),
+    ]);
+    const w = issues.find((i) => i.code === 'cluster.capacity_share_not_one');
+    expect(w).toBeDefined();
+    expect(w?.message).toContain('untiered pools count toward every tier');
   });
 });
 
