@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './planner.css';
-
 /* Print: hide chrome (header, stepper, rail, strip, drawer); keep main content readable on white. */
 @media print {
   .hdr,
