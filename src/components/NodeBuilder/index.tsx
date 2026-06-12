@@ -42,11 +42,6 @@ function fmtUsd(n: number): string {
   return `$${n.toFixed(0)}`;
 }
 
-function fmtPower(w: number): string {
-  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
-  return `${Math.round(w)} W`;
-}
-
 function CategorySelect({
   library,
   category,
@@ -178,12 +173,12 @@ export function NodeBuilder() {
               <div className="stat"><span className="microlabel">Raw capacity</span><div className="v">{fmtCap(derived.raw_capacity_bytes)}</div></div>
               <div className="stat"><span className="microlabel">OSDs</span><div className="v">{derived.osd_count} <small>{derived.hdd_osd_count}H · {derived.nvme_osd_count}N</small></div></div>
               <div className={'stat' + (derived.ram_installed_gb < derived.ram_required_gb ? ' bad' : '')}>
-                <span className="microlabel">RAM</span>
-                <div className="v">{derived.ram_installed_gb} <small>GB · req {derived.ram_required_gb}</small></div>
+                <span className="microlabel">RAM req / have</span>
+                <div className="v">{derived.ram_required_gb} / {derived.ram_installed_gb} <small>GB</small></div>
               </div>
               <div className={'stat' + (derived.power_max_w > derived.psu_capacity_w ? ' bad' : '')}>
-                <span className="microlabel">Power</span>
-                <div className="v">{fmtPower(derived.power_typical_w)} <small>max {fmtPower(derived.power_max_w)}</small></div>
+                <span className="microlabel">Power typ / max</span>
+                <div className="v">{Math.round(derived.power_typical_w)} / {Math.round(derived.power_max_w)} <small>W</small></div>
               </div>
               <div className={'stat' + (derived.pcie_slots_used > derived.pcie_slots_available ? ' bad' : '')}>
                 <span className="microlabel">PCIe slots</span>

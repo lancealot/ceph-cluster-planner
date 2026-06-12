@@ -19,7 +19,7 @@ describe('SC846 HDD-only — clean baseline', () => {
     expect(issues.filter((i) => i.severity === 'error')).toEqual([]);
   });
 
-  it('has no CPU/OSD warning (1.33 cores/OSD ≥ 0.5 HDD threshold)', () => {
+  it('has no CPU warning (24 HDD OSD × 0.5 = 12 required ≤ 32 cores)', () => {
     expect(findIssue(issues, 'node.cores_per_osd_low')).toBeUndefined();
   });
 
@@ -36,18 +36,45 @@ describe('SC846 HDD-only — clean baseline', () => {
   });
 });
 
-describe('SC846 with metadata NVMe — expected CPU/OSD warning', () => {
+describe('SC846 with metadata NVMe — weighted CPU budget', () => {
   const issues = validateNode(SC846_WITH_METADATA, lib, defaults);
 
-  it('fires CPU/OSD warning (1.23 cores/OSD < 2 NVMe threshold)', () => {
+  it('no CPU warning: 24 HDD × 0.5 + 2 NVMe × 2 = 16 required ≤ 32 cores', () => {
+    // The NVMe threshold applies only to the NVMe OSDs, not the whole node —
+    // two metadata drives must not put all 24 HDD OSDs on the 2-cores/OSD bar.
+    expect(findIssue(issues, 'node.cores_per_osd_low')).toBeUndefined();
+  });
+
+  it('has no errors', () => {
+    expect(issues.filter((i) => i.severity === 'error')).toEqual([]);
+  });
+});
+
+describe('CPU budget warning still fires when genuinely under-provisioned', () => {
+  it('all-NVMe node: 20 NVMe OSD × 2 = 40 required > 32 cores → warning', () => {
+    const node: NodeConfig = {
+      ...SC846_HDD_ONLY,
+      drives: [{ component_id: 'nvme-micron-7500-pro-7p68tb', count: 20, role: 'osd' }],
+    };
+    const issues = validateNode(node, lib, defaults);
     const w = findIssue(issues, 'node.cores_per_osd_low');
     expect(w).toBeDefined();
     expect(w?.severity).toBe('warning');
-    expect(w?.message).toContain('1.23');
+    expect(w?.message).toContain('40 required');
   });
 
-  it('still has no errors (the warning is by design)', () => {
-    expect(issues.filter((i) => i.severity === 'error')).toEqual([]);
+  it('is silent exactly at the budget (16 NVMe OSD × 2 = 32 = 32 cores)', () => {
+    const node: NodeConfig = {
+      ...SC846_HDD_ONLY,
+      drives: [{ component_id: 'nvme-micron-7500-pro-7p68tb', count: 16, role: 'osd' }],
+    };
+    const issues = validateNode(node, lib, defaults);
+    expect(findIssue(issues, 'node.cores_per_osd_low')).toBeUndefined();
+  });
+
+  it('db_wal drives carry no core requirement (24 HDD + 6 db_wal = 12 required)', () => {
+    const issues = validateNode(SC846_HDD_ONLY, lib, defaults);
+    expect(findIssue(issues, 'node.cores_per_osd_low')).toBeUndefined();
   });
 });
 
