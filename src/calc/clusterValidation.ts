@@ -64,20 +64,56 @@ export function validatePool(
 
 export function validateCluster(
   cluster: ClusterConfig,
-  _derived: ClusterDerived
+  derived: ClusterDerived
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
+  // Shares are budgets per raw-byte source, mirroring rawForTier in cluster.ts:
+  // 'hdd' and 'nvme'/'ssd' tiers each draw from their own raw pool, so each is
+  // its own 100% budget. Untiered pools draw from total raw — bytes that live
+  // on every tier — so their share counts toward each tier's budget.
   if (cluster.pools.length > 0) {
-    const totalShare = cluster.pools.reduce((s, p) => s + p.capacity_share, 0);
-    if (Math.abs(totalShare - 1.0) > 0.001) {
-      issues.push({
-        severity: 'warning',
-        code: 'cluster.capacity_share_not_one',
-        scope: 'cluster',
-        ref_id: cluster.id,
-        message: `Pool capacity shares sum to ${totalShare.toFixed(3)} (expected 1.000)`,
-      });
+    let hddShare = 0;
+    let flashShare = 0;
+    let untieredShare = 0;
+    let hasHdd = false;
+    let hasFlash = false;
+    for (const p of cluster.pools) {
+      if (!p.target_tier) {
+        untieredShare += p.capacity_share;
+      } else if (p.target_tier === 'hdd') {
+        hddShare += p.capacity_share;
+        hasHdd = true;
+      } else {
+        flashShare += p.capacity_share;
+        hasFlash = true;
+      }
+    }
+
+    const checks: Array<{ label: string; sum: number }> = [];
+    if (!hasHdd && !hasFlash) {
+      checks.push({ label: 'Pool', sum: untieredShare });
+    } else {
+      if (hasHdd || (untieredShare > 0 && derived.total_hdd_raw_bytes > 0)) {
+        checks.push({ label: 'hdd-tier pool', sum: hddShare + untieredShare });
+      }
+      if (hasFlash || (untieredShare > 0 && derived.total_nvme_raw_bytes > 0)) {
+        checks.push({ label: 'nvme/ssd-tier pool', sum: flashShare + untieredShare });
+      }
+    }
+
+    for (const c of checks) {
+      if (Math.abs(c.sum - 1.0) > 0.001) {
+        const untieredNote =
+          untieredShare > 0 ? `; untiered pools count toward every tier` : '';
+        issues.push({
+          severity: 'warning',
+          code: 'cluster.capacity_share_not_one',
+          scope: 'cluster',
+          ref_id: cluster.id,
+          message: `${c.label} capacity shares sum to ${c.sum.toFixed(3)} (expected 1.000${untieredNote})`,
+        });
+      }
     }
   }
 
