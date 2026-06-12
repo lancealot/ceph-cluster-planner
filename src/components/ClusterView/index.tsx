@@ -12,7 +12,10 @@ import type { ClusterConfig, FailureDomain, PoolConfig, PoolType, DeviceTier } f
 
 const POOL_TYPES: PoolType[] = ['replicated', 'ec'];
 const FAILURE_DOMAINS: FailureDomain[] = ['osd', 'host', 'rack', 'datacenter'];
-const TIERS: DeviceTier[] = ['hdd', 'nvme', 'ssd'];
+// 'ssd' is accepted by the schema for backward-compat and treated identically
+// to 'nvme' (deriveNode lumps every non-HDD drive into the flash bucket); only
+// these two are offered going forward.
+const TIERS: DeviceTier[] = ['hdd', 'nvme'];
 
 function newPool(): PoolConfig {
   return {

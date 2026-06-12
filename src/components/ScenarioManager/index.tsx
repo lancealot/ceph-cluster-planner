@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '../../state/workspace';
 import { useScenarios } from '../../state/useScenarios';
-import { useLibrary } from '../../state/useLibrary';
+import { mergeLibrary, useLibrary } from '../../state/useLibrary';
 import {
   ScenarioImportError,
   computeForWorkspace,
@@ -211,7 +211,7 @@ export function ScenarioManager() {
           ) : (
             scenarios.map((s) => {
               const isCurrent = JSON.stringify(s.workspace) === workspaceId;
-              const computed = computeForWorkspace(s.workspace, library);
+              const computed = computeForWorkspace(s.workspace, mergeLibrary(s.workspace));
               const warns = computed.issues.filter((i) => i.severity === 'warning').length;
               const usableTb = computed.cluster.total_usable_bytes / 1e12;
               const perTb = usableTb > 0 ? computed.cluster.total_cost_usd / usableTb : 0;

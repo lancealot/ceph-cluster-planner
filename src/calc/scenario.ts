@@ -5,6 +5,7 @@ import { validateNode } from './validation';
 import { deriveRack, validateRack } from './rack';
 import { deriveCluster, type ClusterDerived } from './cluster';
 import { validateCluster, validatePool } from './clusterValidation';
+import { mergeLibrary } from './library';
 
 export function serialize(workspace: Workspace, name: string): Scenario {
   return {
@@ -85,9 +86,11 @@ function issueKey(i: ValidationIssue): string {
   return `${i.scope}:${i.ref_id}:${i.code}`;
 }
 
-export function diff(base: Scenario, compare: Scenario, library: ComponentLibrary): ScenarioDiff {
-  const a = computeForWorkspace(base.workspace, library);
-  const b = computeForWorkspace(compare.workspace, library);
+export function diff(base: Scenario, compare: Scenario, _library?: ComponentLibrary): ScenarioDiff {
+  // Each scenario is priced against its own embedded library snapshot so a
+  // price override at save time is preserved on display and diff.
+  const a = computeForWorkspace(base.workspace, mergeLibrary(base.workspace));
+  const b = computeForWorkspace(compare.workspace, mergeLibrary(compare.workspace));
   const aKeys = new Set(a.issues.map(issueKey));
   const bKeys = new Set(b.issues.map(issueKey));
   return {

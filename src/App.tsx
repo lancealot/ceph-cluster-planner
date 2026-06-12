@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { WorkspaceProvider } from './state/workspace';
 import { ThemeProvider } from './state/theme';
+import { ScenariosProvider } from './state/useScenarios';
 import { useShareLinkLoader } from './state/useShareLink';
 import { ComponentLibrary } from './components/ComponentLibrary';
 import { NodeBuilder } from './components/NodeBuilder';
@@ -42,7 +43,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <WorkspaceProvider>
-        <Shell />
+        <ScenariosProvider>
+          <Shell />
+        </ScenariosProvider>
       </WorkspaceProvider>
     </ThemeProvider>
   );

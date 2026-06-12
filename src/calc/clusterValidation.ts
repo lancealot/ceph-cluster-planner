@@ -19,10 +19,13 @@ export function validatePool(
       domainCount = derived.total_rack_count;
       break;
     case 'osd':
+      // 'nvme' and 'ssd' both name the flash bucket — deriveNode classifies
+      // every non-HDD storage drive into nvme_osd_count, so 'ssd' counts the
+      // same OSDs and rawForTier in cluster.ts does the same.
       domainCount =
         pool.target_tier === 'hdd'
           ? derived.total_hdd_osd_count
-          : pool.target_tier === 'nvme'
+          : pool.target_tier === 'nvme' || pool.target_tier === 'ssd'
           ? derived.total_nvme_osd_count
           : derived.total_osd_count;
       break;
