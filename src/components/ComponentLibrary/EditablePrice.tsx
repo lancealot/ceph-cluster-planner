@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { format_usd } from '../../calc/units';
+
+function fmtUsd(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
 
 interface Props {
   value: number;
@@ -17,9 +22,7 @@ export function EditablePrice({ value, onSave, modified }: Props) {
   }, [editing]);
 
   function commit() {
-    if (Number.isFinite(draft) && draft >= 0 && draft !== value) {
-      onSave(draft);
-    }
+    if (Number.isFinite(draft) && draft >= 0 && draft !== value) onSave(draft);
     setEditing(false);
   }
 
@@ -31,12 +34,19 @@ export function EditablePrice({ value, onSave, modified }: Props) {
           setDraft(value);
           setEditing(true);
         }}
-        className={`text-right px-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 w-full ${
-          modified ? 'text-sky-700 dark:text-sky-300 font-medium' : ''
-        }`}
+        className="btn"
+        style={{
+          padding: '2px 6px',
+          minHeight: 0,
+          color: modified ? 'var(--accent)' : 'var(--text)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontVariantNumeric: 'tabular-nums',
+          background: 'transparent',
+          border: '1px solid transparent',
+        }}
         title={modified ? 'Overrides the bundled price' : 'Click to edit'}
       >
-        {format_usd(value)}
+        {fmtUsd(value)}
         {modified ? ' *' : ''}
       </button>
     );
@@ -45,6 +55,7 @@ export function EditablePrice({ value, onSave, modified }: Props) {
   return (
     <input
       ref={inputRef}
+      className="inp mono"
       type="number"
       min={0}
       step={0.01}
@@ -55,7 +66,7 @@ export function EditablePrice({ value, onSave, modified }: Props) {
         if (e.key === 'Enter') commit();
         else if (e.key === 'Escape') setEditing(false);
       }}
-      className="border rounded px-1 py-0.5 text-sm w-24 text-right bg-white dark:bg-slate-800 dark:border-slate-600"
+      style={{ width: '110px', textAlign: 'right', padding: '4px 8px' }}
     />
   );
 }

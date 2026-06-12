@@ -2,60 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+@import './planner.css';
+
+/* Print: hide chrome (header, stepper, rail, strip, drawer); keep main content readable on white. */
 @media print {
-  html.dark {
-    background: #fff;
-    color: #000;
-  }
-  .no-print,
-  header,
-  nav,
-  footer,
+  .hdr,
+  .stepper,
+  .rail,
+  .railbar,
+  .drawer,
+  .drawer-scrim,
+  .row-actions,
   button {
     display: none !important;
   }
-  .print-only {
-    display: block !important;
-  }
-  body,
-  main,
-  .bg-slate-50,
-  .bg-slate-900,
-  .bg-white,
-  .dark\:bg-slate-800,
-  .dark\:bg-slate-900,
-  .dark\:bg-slate-700 {
+  html[data-theme] {
     background: #fff !important;
     color: #000 !important;
   }
-  .border,
-  .border-slate-200,
-  .dark\:border-slate-700 {
-    border-color: #cbd5e1 !important;
-  }
-  .text-slate-500,
-  .text-slate-600,
-  .text-slate-700,
-  .text-slate-900,
-  .dark\:text-slate-100,
-  .dark\:text-slate-300,
-  .dark\:text-slate-400 {
+  .panel,
+  .screen,
+  .workarea,
+  body,
+  main {
+    background: #fff !important;
     color: #000 !important;
   }
-  details > summary {
-    list-style: none;
-  }
-  details[open] > summary::after {
-    display: none;
-  }
-  details:not([open]) {
-    display: none;
-  }
-  main > * {
+  .panel {
+    border-color: #cbd5e1 !important;
     break-inside: avoid;
   }
-}
-
-.print-only {
-  display: none;
 }

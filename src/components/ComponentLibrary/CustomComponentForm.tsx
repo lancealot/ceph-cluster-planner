@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Component, ComponentCategory } from '../../types/components';
+import { Panel } from '../Shell/primitives';
 
 interface Props {
   initial?: Component;
@@ -8,15 +9,7 @@ interface Props {
 }
 
 const CATEGORIES: ComponentCategory[] = [
-  'chassis',
-  'cpu',
-  'ram',
-  'hdd',
-  'nvme_ssd',
-  'sata_ssd',
-  'hba',
-  'nic',
-  'psu',
+  'chassis', 'cpu', 'ram', 'hdd', 'nvme_ssd', 'sata_ssd', 'hba', 'nic', 'psu',
 ];
 
 function defaultFor(category: ComponentCategory): Component {
@@ -51,13 +44,21 @@ function defaultFor(category: ComponentCategory): Component {
   }
 }
 
+function Lbl({ label, children, span = 1 }: { label: string; children: ReactNode; span?: number }) {
+  return (
+    <label className="field" style={{ gridColumn: `span ${span}` }}>
+      <span className="microlabel">{label}</span>
+      {children}
+    </label>
+  );
+}
+
 export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
   const [draft, setDraft] = useState<Component>(initial ?? defaultFor('chassis'));
 
   function patch<K extends keyof Component>(key: K, value: Component[K]) {
     setDraft({ ...draft, [key]: value });
   }
-  // category-specific updates use a loose cast — Zod will validate on import
   function patchAny(key: string, value: unknown) {
     setDraft({
       ...(draft as unknown as Record<string, unknown>),
@@ -80,398 +81,116 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
   const str = (v: unknown) => (typeof v === 'string' ? v : '');
 
   return (
-    <form onSubmit={submit} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2 text-sm">
-      <h4 className="text-sm font-semibold">{initial ? 'Edit custom component' : 'Add custom component'}</h4>
-      <div className="grid grid-cols-4 gap-2">
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Category</div>
-          <select
-            value={draft.category}
-            onChange={(e) => changeCategory(e.target.value as ComponentCategory)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            disabled={!!initial}
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">ID</div>
-          <input
-            value={draft.id}
-            onChange={(e) => patch('id', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            disabled={!!initial}
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Vendor</div>
-          <input
-            value={draft.vendor}
-            onChange={(e) => patch('vendor', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Model</div>
-          <input
-            value={draft.model}
-            onChange={(e) => patch('model', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Price (USD)</div>
-          <input
-            type="number"
-            min={0}
-            value={draft.price_usd}
-            onChange={(e) => patch('price_usd', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Watts (typ)</div>
-          <input
-            type="number"
-            min={0}
-            value={draft.watts_typical}
-            onChange={(e) => patch('watts_typical', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Watts (max)</div>
-          <input
-            type="number"
-            min={0}
-            value={draft.watts_max}
-            onChange={(e) => patch('watts_max', parseFloat(e.target.value) || 0)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-        <label>
-          <div className="text-xs text-slate-500 dark:text-slate-400">As-of date</div>
-          <input
-            type="date"
-            value={draft.as_of_date}
-            onChange={(e) => patch('as_of_date', e.target.value)}
-            className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-          />
-        </label>
-      </div>
+    <Panel title={initial ? 'Edit custom component' : 'Add custom component'}>
+      <form onSubmit={submit} className="stack-sm">
+        <div className="cols" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <Lbl label="Category">
+            <select className="sel" value={draft.category} onChange={(e) => changeCategory(e.target.value as ComponentCategory)} disabled={!!initial}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </Lbl>
+          <Lbl label="ID">
+            <input className="inp mono" value={draft.id} onChange={(e) => patch('id', e.target.value)} disabled={!!initial} />
+          </Lbl>
+          <Lbl label="Vendor">
+            <input className="inp" value={draft.vendor} onChange={(e) => patch('vendor', e.target.value)} />
+          </Lbl>
+          <Lbl label="Model">
+            <input className="inp" value={draft.model} onChange={(e) => patch('model', e.target.value)} />
+          </Lbl>
+          <Lbl label="Price (USD)">
+            <input className="inp mono" type="number" min={0} value={draft.price_usd} onChange={(e) => patch('price_usd', parseFloat(e.target.value) || 0)} />
+          </Lbl>
+          <Lbl label="Watts (typ)">
+            <input className="inp mono" type="number" min={0} value={draft.watts_typical} onChange={(e) => patch('watts_typical', parseFloat(e.target.value) || 0)} />
+          </Lbl>
+          <Lbl label="Watts (max)">
+            <input className="inp mono" type="number" min={0} value={draft.watts_max} onChange={(e) => patch('watts_max', parseFloat(e.target.value) || 0)} />
+          </Lbl>
+          <Lbl label="As-of date">
+            <input className="inp mono" type="date" value={draft.as_of_date} onChange={(e) => patch('as_of_date', e.target.value)} />
+          </Lbl>
+        </div>
 
-      {draft.category === 'chassis' ? (
-        <div className="grid grid-cols-6 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">RU</div>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={num(d.ru)}
-              onChange={(e) => patchAny('ru', Math.max(1, parseInt(e.target.value) || 1))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">LFF bays</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.drive_bays_lff)}
-              onChange={(e) => patchAny('drive_bays_lff', Math.max(0, parseInt(e.target.value) || 0))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">SFF bays</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.drive_bays_sff)}
-              onChange={(e) => patchAny('drive_bays_sff', Math.max(0, parseInt(e.target.value) || 0))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">NVMe bays</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.drive_bays_nvme)}
-              onChange={(e) => patchAny('drive_bays_nvme', Math.max(0, parseInt(e.target.value) || 0))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe slots</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.pcie_slots)}
-              onChange={(e) => patchAny('pcie_slots', Math.max(0, parseInt(e.target.value) || 0))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Max PSU (W)</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.max_psu_w)}
-              onChange={(e) => patchAny('max_psu_w', Math.max(0, parseInt(e.target.value) || 0))}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'hdd' || draft.category === 'nvme_ssd' || draft.category === 'sata_ssd' ? (
-        <div className="grid grid-cols-3 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Capacity (TB)</div>
-            <input
-              type="number"
-              step={0.01}
-              min={0}
-              value={num(d.capacity_tb)}
-              onChange={(e) => patchAny('capacity_tb', parseFloat(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Form factor</div>
-            <input
-              value={str(d.form_factor)}
-              onChange={(e) => patchAny('form_factor', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Interface</div>
-            <input
-              value={str(d.interface)}
-              onChange={(e) => patchAny('interface', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'cpu' ? (
-        <div className="grid grid-cols-5 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Cores</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.cores)}
-              onChange={(e) => patchAny('cores', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Threads</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.threads)}
-              onChange={(e) => patchAny('threads', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Base clock (GHz)</div>
-            <input
-              type="number"
-              step={0.1}
-              min={0}
-              value={num(d.base_clock_ghz)}
-              onChange={(e) => patchAny('base_clock_ghz', parseFloat(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">TDP (W)</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.tdp_w)}
-              onChange={(e) => patchAny('tdp_w', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Socket</div>
-            <input
-              value={str(d.socket)}
-              onChange={(e) => patchAny('socket', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'hba' ? (
-        <div className="grid grid-cols-4 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Ports</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.ports)}
-              onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Port type</div>
-            <select
-              value={str(d.port_type)}
-              onChange={(e) => patchAny('port_type', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value="sas">sas</option>
-              <option value="sata">sata</option>
-              <option value="nvme">nvme</option>
-            </select>
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe lanes</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.pcie_lanes)}
-              onChange={(e) => patchAny('pcie_lanes', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe gen</div>
-            <select
-              value={num(d.pcie_gen)}
-              onChange={(e) => patchAny('pcie_gen', parseInt(e.target.value) || 3)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5</option>
-            </select>
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'nic' ? (
-        <div className="grid grid-cols-4 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Ports</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.ports)}
-              onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Port speed (Gb/s)</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.port_speed_gbps)}
-              onChange={(e) => patchAny('port_speed_gbps', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe lanes</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.pcie_lanes)}
-              onChange={(e) => patchAny('pcie_lanes', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">PCIe gen</div>
-            <select
-              value={num(d.pcie_gen)}
-              onChange={(e) => patchAny('pcie_gen', parseInt(e.target.value) || 3)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5</option>
-            </select>
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'psu' ? (
-        <div className="grid grid-cols-2 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Wattage</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.wattage)}
-              onChange={(e) => patchAny('wattage', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Efficiency</div>
-            <select
-              value={str(d.efficiency_rating)}
-              onChange={(e) => patchAny('efficiency_rating', e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value="80plus_gold">80+ Gold</option>
-              <option value="80plus_platinum">80+ Platinum</option>
-              <option value="80plus_titanium">80+ Titanium</option>
-              <option value="other">other</option>
-            </select>
-          </label>
-        </div>
-      ) : null}
-      {draft.category === 'ram' ? (
-        <div className="grid grid-cols-2 gap-2">
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Capacity (GB)</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.capacity_gb)}
-              onChange={(e) => patchAny('capacity_gb', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-          <label>
-            <div className="text-xs text-slate-500 dark:text-slate-400">Speed (MHz)</div>
-            <input
-              type="number"
-              min={0}
-              value={num(d.speed_mhz)}
-              onChange={(e) => patchAny('speed_mhz', parseInt(e.target.value) || 0)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            />
-          </label>
-        </div>
-      ) : null}
-
-      <div className="flex gap-2">
-        <button type="submit" className="px-3 py-1 text-sm bg-slate-900 text-white rounded">
-          {initial ? 'Save' : 'Add'}
-        </button>
-        {onCancel ? (
-          <button type="button" onClick={onCancel} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
-            Cancel
-          </button>
+        {draft.category === 'chassis' ? (
+          <div className="cols" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+            <Lbl label="RU"><input className="inp mono" type="number" min={1} max={20} value={num(d.ru)} onChange={(e) => patchAny('ru', Math.max(1, parseInt(e.target.value) || 1))} /></Lbl>
+            <Lbl label="LFF bays"><input className="inp mono" type="number" min={0} value={num(d.drive_bays_lff)} onChange={(e) => patchAny('drive_bays_lff', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
+            <Lbl label="SFF bays"><input className="inp mono" type="number" min={0} value={num(d.drive_bays_sff)} onChange={(e) => patchAny('drive_bays_sff', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
+            <Lbl label="NVMe bays"><input className="inp mono" type="number" min={0} value={num(d.drive_bays_nvme)} onChange={(e) => patchAny('drive_bays_nvme', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
+            <Lbl label="PCIe slots"><input className="inp mono" type="number" min={0} value={num(d.pcie_slots)} onChange={(e) => patchAny('pcie_slots', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
+            <Lbl label="Max PSU (W)"><input className="inp mono" type="number" min={0} value={num(d.max_psu_w)} onChange={(e) => patchAny('max_psu_w', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
+          </div>
         ) : null}
-      </div>
-      <p className="text-xs text-slate-500 dark:text-slate-400">
-        Drive RPM and SSD endurance (DWPD) are display-only; tune them via the exported JSON if needed.
-      </p>
-    </form>
+
+        {draft.category === 'hdd' || draft.category === 'nvme_ssd' || draft.category === 'sata_ssd' ? (
+          <div className="cols" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <Lbl label="Capacity (TB)"><input className="inp mono" type="number" step={0.01} min={0} value={num(d.capacity_tb)} onChange={(e) => patchAny('capacity_tb', parseFloat(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Form factor"><input className="inp mono" value={str(d.form_factor)} onChange={(e) => patchAny('form_factor', e.target.value)} /></Lbl>
+            <Lbl label="Interface"><input className="inp mono" value={str(d.interface)} onChange={(e) => patchAny('interface', e.target.value)} /></Lbl>
+          </div>
+        ) : null}
+
+        {draft.category === 'cpu' ? (
+          <div className="cols" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+            <Lbl label="Cores"><input className="inp mono" type="number" min={0} value={num(d.cores)} onChange={(e) => patchAny('cores', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Threads"><input className="inp mono" type="number" min={0} value={num(d.threads)} onChange={(e) => patchAny('threads', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Base clock (GHz)"><input className="inp mono" type="number" step={0.1} min={0} value={num(d.base_clock_ghz)} onChange={(e) => patchAny('base_clock_ghz', parseFloat(e.target.value) || 0)} /></Lbl>
+            <Lbl label="TDP (W)"><input className="inp mono" type="number" min={0} value={num(d.tdp_w)} onChange={(e) => patchAny('tdp_w', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Socket"><input className="inp mono" value={str(d.socket)} onChange={(e) => patchAny('socket', e.target.value)} /></Lbl>
+          </div>
+        ) : null}
+
+        {draft.category === 'ram' ? (
+          <div className="cols c2">
+            <Lbl label="Capacity (GB)"><input className="inp mono" type="number" min={0} value={num(d.capacity_gb)} onChange={(e) => patchAny('capacity_gb', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Speed (MHz)"><input className="inp mono" type="number" min={0} value={num(d.speed_mhz)} onChange={(e) => patchAny('speed_mhz', parseInt(e.target.value) || 0)} /></Lbl>
+          </div>
+        ) : null}
+
+        {draft.category === 'hba' || draft.category === 'nic' ? (
+          <div className="cols" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+            <Lbl label="Ports"><input className="inp mono" type="number" min={0} value={num(d.ports)} onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)} /></Lbl>
+            {draft.category === 'hba' ? (
+              <Lbl label="Port type">
+                <select className="sel mono" value={str(d.port_type)} onChange={(e) => patchAny('port_type', e.target.value)}>
+                  <option value="sas">sas</option>
+                  <option value="sata">sata</option>
+                  <option value="nvme">nvme</option>
+                </select>
+              </Lbl>
+            ) : (
+              <Lbl label="Port speed (Gb/s)"><input className="inp mono" type="number" min={0} value={num(d.port_speed_gbps)} onChange={(e) => patchAny('port_speed_gbps', parseInt(e.target.value) || 0)} /></Lbl>
+            )}
+            <Lbl label="PCIe lanes"><input className="inp mono" type="number" min={0} value={num(d.pcie_lanes)} onChange={(e) => patchAny('pcie_lanes', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="PCIe gen">
+              <select className="sel mono" value={num(d.pcie_gen)} onChange={(e) => patchAny('pcie_gen', parseInt(e.target.value) || 3)}>
+                <option value={3}>3</option><option value={4}>4</option><option value={5}>5</option>
+              </select>
+            </Lbl>
+          </div>
+        ) : null}
+
+        {draft.category === 'psu' ? (
+          <div className="cols c2">
+            <Lbl label="Wattage"><input className="inp mono" type="number" min={0} value={num(d.wattage)} onChange={(e) => patchAny('wattage', parseInt(e.target.value) || 0)} /></Lbl>
+            <Lbl label="Efficiency">
+              <select className="sel" value={str(d.efficiency_rating)} onChange={(e) => patchAny('efficiency_rating', e.target.value)}>
+                <option value="80plus_gold">80+ Gold</option>
+                <option value="80plus_platinum">80+ Platinum</option>
+                <option value="80plus_titanium">80+ Titanium</option>
+                <option value="other">other</option>
+              </select>
+            </Lbl>
+          </div>
+        ) : null}
+
+        <div className="row">
+          <button type="submit" className="btn prime">{initial ? 'Save' : 'Add'}</button>
+          {onCancel ? <button type="button" className="btn" onClick={onCancel}>Cancel</button> : null}
+          <span className="counts" style={{ marginLeft: 'auto' }}>Drive RPM and SSD endurance can be tuned via the exported JSON.</span>
+        </div>
+      </form>
+    </Panel>
   );
 }

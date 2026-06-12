@@ -4,10 +4,11 @@ import { useLibrary } from '../../state/useLibrary';
 import type { DriveRole, NodeConfig } from '../../types/node';
 import { deriveNode } from '../../calc/node';
 import { validateNode } from '../../calc/validation';
-import { NodeDerivedPanel } from '../Common/DerivedPanel';
-import { WarningsList } from '../Common/WarningsList';
-import { ComponentPicker } from '../Common/ComponentPicker';
 import { SC846_HDD_ONLY, SC846_WITH_METADATA } from '../../calc/fixtures/sc846';
+import { Panel, Field } from '../Shell/primitives';
+import { BayMap } from './BayMap';
+import { WarningsList } from '../Common/WarningsList';
+import type { Component, ComponentCategory } from '../../types/components';
 
 const DRIVE_ROLES: DriveRole[] = ['osd', 'db_wal', 'metadata_osd', 'cache', 'system'];
 
@@ -28,15 +29,60 @@ function newNode(): NodeConfig {
   };
 }
 
+function fmtCap(bytes: number): string {
+  const tb = bytes / 1e12;
+  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
+  if (tb >= 1) return `${tb.toFixed(2)} TB`;
+  return `${(tb * 1000).toFixed(0)} GB`;
+}
+
+function fmtUsd(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
+
+function fmtPower(w: number): string {
+  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
+  return `${Math.round(w)} W`;
+}
+
+function CategorySelect({
+  library,
+  category,
+  value,
+  onChange,
+  mono = false,
+}: {
+  library: ReturnType<typeof useLibrary>;
+  category: ComponentCategory | ComponentCategory[];
+  value: string;
+  onChange: (id: string) => void;
+  mono?: boolean;
+}) {
+  const cats = Array.isArray(category) ? category : [category];
+  const opts = useMemo(() => {
+    const arr: Component[] = [];
+    for (const c of Object.values(library)) if (cats.includes(c.category)) arr.push(c);
+    arr.sort((a, b) => a.vendor.localeCompare(b.vendor) || a.model.localeCompare(b.model));
+    return arr;
+  }, [library, cats.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <select className={'sel' + (mono ? ' mono' : '')} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">— select —</option>
+      {opts.map((c) => (
+        <option key={c.id} value={c.id}>{c.vendor} {c.model}</option>
+      ))}
+    </select>
+  );
+}
+
 export function NodeBuilder() {
   const { workspace, upsertNode, deleteNode } = useWorkspace();
   const library = useLibrary();
   const defaults = workspace.cluster.defaults;
 
-  const [selectedId, setSelectedId] = useState<string | null>(
-    workspace.nodes[0]?.id ?? null
-  );
-
+  const [selectedId, setSelectedId] = useState<string | null>(workspace.nodes[0]?.id ?? null);
   const selected = useMemo(
     () => workspace.nodes.find((n) => n.id === selectedId) ?? null,
     [workspace.nodes, selectedId]
@@ -50,315 +96,273 @@ export function NodeBuilder() {
     upsertNode(n);
     setSelectedId(n.id);
   }
-
   function loadFixture(variant: 'hdd' | 'meta') {
     const fixture = variant === 'hdd' ? SC846_HDD_ONLY : SC846_WITH_METADATA;
-    const copy: NodeConfig = { ...fixture, id: `${fixture.id}-${Date.now().toString(36)}`, drives: [...fixture.drives] };
+    const copy: NodeConfig = {
+      ...fixture,
+      id: `${fixture.id}-${Date.now().toString(36)}`,
+      drives: [...fixture.drives],
+    };
     upsertNode(copy);
     setSelectedId(copy.id);
   }
-
   function update(patch: Partial<NodeConfig>) {
     if (!selected) return;
     upsertNode({ ...selected, ...patch });
   }
 
+  function nodeCaption(n: NodeConfig): string {
+    const nd = deriveNode(n, library, defaults);
+    return `${n.role ?? 'node'} · ${(nd.raw_capacity_bytes / 1e12).toFixed(0)} TB raw · ${fmtUsd(nd.cost_usd)}`;
+  }
+
   return (
-    <div className="p-4 grid grid-cols-[260px_1fr] gap-4 max-w-7xl mx-auto">
-      <aside className="space-y-2">
-        <div className="flex flex-wrap gap-1">
-          <button onClick={startNew} className="px-2 py-1 text-sm bg-slate-900 text-white rounded">
-            + New
-          </button>
-          <button onClick={() => loadFixture('hdd')} className="px-2 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
-            Load SC846 ref (HDD)
-          </button>
-          <button onClick={() => loadFixture('meta')} className="px-2 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
+    <div className="screen">
+      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 18, alignItems: 'start' }}>
+        <div className="stack-sm">
+          <div className="row">
+            <button className="btn prime sm grow" type="button" onClick={startNew}>+ New node</button>
+            <button className="btn sm" type="button" onClick={() => loadFixture('hdd')}>SC846 ref</button>
+          </div>
+          <button className="btn sm" type="button" onClick={() => loadFixture('meta')} style={{ width: '100%' }}>
             + metadata variant
           </button>
+          <div className="panel itemlist">
+            {workspace.nodes.length === 0 ? (
+              <button type="button" style={{ cursor: 'default' }}>
+                <div className="t" style={{ color: 'var(--text3)', fontWeight: 400 }}>
+                  No node configs yet
+                </div>
+                <div className="s">Click + New or load a reference</div>
+              </button>
+            ) : (
+              workspace.nodes.map((n) => (
+                <button key={n.id} type="button" className={selectedId === n.id ? 'on' : ''} onClick={() => setSelectedId(n.id)}>
+                  <div className="t">{n.name || '(unnamed)'}</div>
+                  <div className="s">{nodeCaption(n)}</div>
+                </button>
+              ))
+            )}
+          </div>
         </div>
-        <ul className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded divide-y">
-          {workspace.nodes.length === 0 ? (
-            <li className="p-3 text-sm text-slate-500 dark:text-slate-400">No node configs yet. Click + New or load a reference.</li>
-          ) : (
-            workspace.nodes.map((n) => (
-              <li
-                key={n.id}
-                className={`p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 ${selectedId === n.id ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
-                onClick={() => setSelectedId(n.id)}
-              >
-                <div className="text-sm font-medium truncate">{n.name || '(unnamed)'}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{n.role ?? 'node'}</div>
-              </li>
-            ))
-          )}
-        </ul>
-      </aside>
 
-      <section>
-        {!selected ? (
-          <div className="text-sm text-slate-500 dark:text-slate-400 p-4">Select a node on the left, or create one.</div>
+        {!selected || !derived ? (
+          <Panel>
+            <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>Select a node on the left, or create one.</p>
+          </Panel>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex-1">
-                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</label>
-                <input
-                  value={selected.name}
-                  onChange={(e) => update({ name: e.target.value })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                />
+          <div className="stack">
+            <div className="row">
+              <div className="field grow">
+                <span className="microlabel">Name</span>
+                <input className="inp" value={selected.name} onChange={(e) => update({ name: e.target.value })} />
               </div>
-              <div className="w-40">
-                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Role tag</label>
-                <input
-                  value={selected.role ?? ''}
-                  onChange={(e) => update({ role: e.target.value || undefined })}
-                  placeholder="e.g. osd"
-                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                />
+              <div className="field" style={{ width: 130 }}>
+                <span className="microlabel">Role tag</span>
+                <input className="inp mono" value={selected.role ?? ''} onChange={(e) => update({ role: e.target.value || undefined })} placeholder="e.g. osd" />
               </div>
               <button
+                className="btn danger"
+                type="button"
+                style={{ alignSelf: 'flex-end' }}
                 onClick={() => {
                   deleteNode(selected.id);
                   setSelectedId(null);
                 }}
-                className="px-2 py-1 text-sm bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded"
               >
                 Delete
               </button>
             </div>
 
-            <div className="grid grid-cols-[1fr_1fr] gap-4">
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Platform</h4>
-                <div>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Chassis</label>
-                  <ComponentPicker
-                    library={library}
-                    categories={['chassis']}
-                    value={selected.chassis_id}
-                    onChange={(id) => update({ chassis_id: id })}
-                  />
-                </div>
-                <div className="grid grid-cols-[1fr_5rem] gap-2">
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">CPU</label>
-                    <ComponentPicker
-                      library={library}
-                      categories={['cpu']}
-                      value={selected.cpu_id}
-                      onChange={(id) => update({ cpu_id: id })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Sockets</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={selected.cpu_count}
-                      onChange={(e) => update({ cpu_count: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-[1fr_5rem] gap-2">
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">RAM module</label>
-                    <ComponentPicker
-                      library={library}
-                      categories={['ram']}
-                      value={selected.ram_module_id}
-                      onChange={(id) => update({ ram_module_id: id })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Count</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={selected.ram_module_count}
-                      onChange={(e) => update({ ram_module_count: Math.max(0, parseInt(e.target.value) || 0) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-[1fr_5rem] gap-2">
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">PSU</label>
-                    <ComponentPicker
-                      library={library}
-                      categories={['psu']}
-                      value={selected.psu_id}
-                      onChange={(id) => update({ psu_id: id })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Count</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={selected.psu_count}
-                      onChange={(e) => update({ psu_count: Math.max(1, parseInt(e.target.value) || 1) })}
-                      className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                    />
-                  </div>
-                </div>
+            <div className="stats">
+              <div className="stat"><span className="microlabel">Raw capacity</span><div className="v">{fmtCap(derived.raw_capacity_bytes)}</div></div>
+              <div className="stat"><span className="microlabel">OSDs</span><div className="v">{derived.osd_count} <small>{derived.hdd_osd_count}H · {derived.nvme_osd_count}N</small></div></div>
+              <div className={'stat' + (derived.ram_installed_gb < derived.ram_required_gb ? ' bad' : '')}>
+                <span className="microlabel">RAM</span>
+                <div className="v">{derived.ram_installed_gb} <small>GB · req {derived.ram_required_gb}</small></div>
               </div>
-
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Drives</h4>
-                {selected.drives.map((slot, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_6rem_4rem_2rem] gap-1 items-end">
-                    <ComponentPicker
-                      library={library}
-                      categories={['hdd', 'nvme_ssd', 'sata_ssd']}
-                      value={slot.component_id}
-                      onChange={(id) =>
-                        update({
-                          drives: selected.drives.map((s, i) => (i === idx ? { ...s, component_id: id } : s)),
-                        })
-                      }
-                    />
-                    <select
-                      value={slot.role}
-                      onChange={(e) =>
-                        update({
-                          drives: selected.drives.map((s, i) =>
-                            i === idx ? { ...s, role: e.target.value as DriveRole } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    >
-                      {DRIVE_ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={slot.count}
-                      onChange={(e) =>
-                        update({
-                          drives: selected.drives.map((s, i) =>
-                            i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    />
-                    <button
-                      onClick={() => update({ drives: selected.drives.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 dark:text-rose-300 text-sm"
-                      aria-label="Remove drive slot"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() =>
-                    update({ drives: [...selected.drives, { component_id: '', count: 1, role: 'osd' }] })
-                  }
-                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
-                >
-                  + Add drive slot
-                </button>
-
-                <h4 className="text-sm font-semibold pt-2">HBAs</h4>
-                {selected.hbas.map((slot, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_4rem_2rem] gap-1 items-end">
-                    <ComponentPicker
-                      library={library}
-                      categories={['hba']}
-                      value={slot.component_id}
-                      onChange={(id) =>
-                        update({ hbas: selected.hbas.map((s, i) => (i === idx ? { ...s, component_id: id } : s)) })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      value={slot.count}
-                      onChange={(e) =>
-                        update({
-                          hbas: selected.hbas.map((s, i) =>
-                            i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    />
-                    <button
-                      onClick={() => update({ hbas: selected.hbas.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 dark:text-rose-300 text-sm"
-                      aria-label="Remove HBA"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => update({ hbas: [...selected.hbas, { component_id: '', count: 1 }] })}
-                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
-                >
-                  + Add HBA
-                </button>
-
-                <h4 className="text-sm font-semibold pt-2">NICs</h4>
-                {selected.nics.map((slot, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_4rem_2rem] gap-1 items-end">
-                    <ComponentPicker
-                      library={library}
-                      categories={['nic']}
-                      value={slot.component_id}
-                      onChange={(id) =>
-                        update({ nics: selected.nics.map((s, i) => (i === idx ? { ...s, component_id: id } : s)) })
-                      }
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      value={slot.count}
-                      onChange={(e) =>
-                        update({
-                          nics: selected.nics.map((s, i) =>
-                            i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    />
-                    <button
-                      onClick={() => update({ nics: selected.nics.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 dark:text-rose-300 text-sm"
-                      aria-label="Remove NIC"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => update({ nics: [...selected.nics, { component_id: '', count: 1 }] })}
-                  className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
-                >
-                  + Add NIC
-                </button>
+              <div className={'stat' + (derived.power_max_w > derived.psu_capacity_w ? ' bad' : '')}>
+                <span className="microlabel">Power</span>
+                <div className="v">{fmtPower(derived.power_typical_w)} <small>max {fmtPower(derived.power_max_w)}</small></div>
               </div>
+              <div className={'stat' + (derived.pcie_slots_used > derived.pcie_slots_available ? ' bad' : '')}>
+                <span className="microlabel">PCIe slots</span>
+                <div className="v">{derived.pcie_slots_used} / {derived.pcie_slots_available} <small>{derived.pcie_lanes_used} lanes</small></div>
+              </div>
+              <div className="stat"><span className="microlabel">Cost</span><div className="v">{fmtUsd(derived.cost_usd)}</div></div>
             </div>
 
-            {derived ? <NodeDerivedPanel derived={derived} /> : null}
+            <div className="cols c2">
+              <Panel title="Platform">
+                <div className="stack-sm">
+                  <Field label="Chassis">
+                    <CategorySelect library={library} category="chassis" value={selected.chassis_id} onChange={(id) => update({ chassis_id: id })} />
+                  </Field>
+                  <div className="row">
+                    <div className="grow">
+                      <Field label="CPU">
+                        <CategorySelect library={library} category="cpu" value={selected.cpu_id} onChange={(id) => update({ cpu_id: id })} />
+                      </Field>
+                    </div>
+                    <div style={{ width: 76 }}>
+                      <Field label="Sockets">
+                        <input className="inp mono" type="number" min={1} value={selected.cpu_count} onChange={(e) => update({ cpu_count: Math.max(1, parseInt(e.target.value) || 1) })} />
+                      </Field>
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="grow">
+                      <Field label="RAM module">
+                        <CategorySelect library={library} category="ram" value={selected.ram_module_id} onChange={(id) => update({ ram_module_id: id })} />
+                      </Field>
+                    </div>
+                    <div style={{ width: 76 }}>
+                      <Field label="Count">
+                        <input className="inp mono" type="number" min={0} value={selected.ram_module_count} onChange={(e) => update({ ram_module_count: Math.max(0, parseInt(e.target.value) || 0) })} />
+                      </Field>
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div className="grow">
+                      <Field label="PSU">
+                        <CategorySelect library={library} category="psu" value={selected.psu_id} onChange={(id) => update({ psu_id: id })} />
+                      </Field>
+                    </div>
+                    <div style={{ width: 76 }}>
+                      <Field label="Count">
+                        <input className="inp mono" type="number" min={1} value={selected.psu_count} onChange={(e) => update({ psu_count: Math.max(1, parseInt(e.target.value) || 1) })} />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              </Panel>
 
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3">
-              <h4 className="text-sm font-semibold mb-2">Validation</h4>
-              <WarningsList issues={issues} empty="No issues — node is clean." />
+              <Panel
+                title="Drive bays"
+                right={<span className="counts">{derived.total_drives} populated</span>}
+              >
+                <BayMap node={selected} library={library} />
+              </Panel>
             </div>
+
+            <div className="cols c2">
+              <Panel
+                title="Drives"
+                right={
+                  <button
+                    className="btn link sm"
+                    type="button"
+                    onClick={() => update({ drives: [...selected.drives, { component_id: '', count: 1, role: 'osd' }] })}
+                  >
+                    + Add drive slot
+                  </button>
+                }
+              >
+                <div className="stack-sm">
+                  {selected.drives.length === 0 ? (
+                    <span className="counts">No drives configured.</span>
+                  ) : null}
+                  {selected.drives.map((slot, idx) => (
+                    <div className="slotrow drive" key={idx}>
+                      <CategorySelect
+                        library={library}
+                        category={['hdd', 'nvme_ssd', 'sata_ssd']}
+                        value={slot.component_id}
+                        onChange={(id) =>
+                          update({ drives: selected.drives.map((s, i) => (i === idx ? { ...s, component_id: id } : s)) })
+                        }
+                      />
+                      <select
+                        className="sel mono"
+                        value={slot.role}
+                        onChange={(e) =>
+                          update({ drives: selected.drives.map((s, i) => (i === idx ? { ...s, role: e.target.value as DriveRole } : s)) })
+                        }
+                      >
+                        {DRIVE_ROLES.map((r) => (<option key={r} value={r}>{r}</option>))}
+                      </select>
+                      <input
+                        className="inp mono"
+                        type="number"
+                        min={1}
+                        value={slot.count}
+                        onChange={(e) =>
+                          update({ drives: selected.drives.map((s, i) => (i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s)) })
+                        }
+                      />
+                      <button className="xbtn" type="button" aria-label="Remove drive slot" onClick={() => update({ drives: selected.drives.filter((_, i) => i !== idx) })}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+
+              <Panel
+                title="Expansion cards"
+                right={
+                  <div className="row" style={{ gap: 4 }}>
+                    <button className="btn link sm" type="button" onClick={() => update({ hbas: [...selected.hbas, { component_id: '', count: 1 }] })}>+ HBA</button>
+                    <button className="btn link sm" type="button" onClick={() => update({ nics: [...selected.nics, { component_id: '', count: 1 }] })}>+ NIC</button>
+                  </div>
+                }
+              >
+                <div className="stack-sm">
+                  {selected.hbas.length === 0 && selected.nics.length === 0 ? (
+                    <span className="counts">No HBAs or NICs configured.</span>
+                  ) : null}
+                  {selected.hbas.map((slot, idx) => (
+                    <div className="slotrow card" key={'h' + idx}>
+                      <CategorySelect
+                        library={library}
+                        category="hba"
+                        value={slot.component_id}
+                        onChange={(id) =>
+                          update({ hbas: selected.hbas.map((s, i) => (i === idx ? { ...s, component_id: id } : s)) })
+                        }
+                      />
+                      <input
+                        className="inp mono"
+                        type="number"
+                        min={1}
+                        value={slot.count}
+                        onChange={(e) =>
+                          update({ hbas: selected.hbas.map((s, i) => (i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s)) })
+                        }
+                      />
+                      <button className="xbtn" type="button" aria-label="Remove HBA" onClick={() => update({ hbas: selected.hbas.filter((_, i) => i !== idx) })}>✕</button>
+                    </div>
+                  ))}
+                  {selected.nics.map((slot, idx) => (
+                    <div className="slotrow card" key={'n' + idx}>
+                      <CategorySelect
+                        library={library}
+                        category="nic"
+                        value={slot.component_id}
+                        onChange={(id) =>
+                          update({ nics: selected.nics.map((s, i) => (i === idx ? { ...s, component_id: id } : s)) })
+                        }
+                      />
+                      <input
+                        className="inp mono"
+                        type="number"
+                        min={1}
+                        value={slot.count}
+                        onChange={(e) =>
+                          update({ nics: selected.nics.map((s, i) => (i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s)) })
+                        }
+                      />
+                      <button className="xbtn" type="button" aria-label="Remove NIC" onClick={() => update({ nics: selected.nics.filter((_, i) => i !== idx) })}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            <Panel title="Node validation">
+              <WarningsList issues={issues} empty="Node is clean — no validation issues." />
+            </Panel>
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

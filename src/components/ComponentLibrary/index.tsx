@@ -3,11 +3,9 @@ import { useLibrary } from '../../state/useLibrary';
 import { useWorkspace } from '../../state/workspace';
 import bundled from '../../data/components.json';
 import type { Component, ComponentCategory } from '../../types/components';
-import { format_power } from '../../calc/units';
-import { FreshnessChip } from './FreshnessChip';
-import { CustomComponentForm } from './CustomComponentForm';
+import { Panel, Freshness } from '../Shell/primitives';
 import { EditablePrice } from './EditablePrice';
-import { FreshnessBanner } from '../Common/FreshnessBanner';
+import { CustomComponentForm } from './CustomComponentForm';
 
 const bundledList = bundled as Component[];
 const bundledIds = new Set(bundledList.map((c) => c.id));
@@ -59,29 +57,52 @@ function describeSpec(c: Component): string {
   }
 }
 
+function fmtWatts(w: number): string {
+  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
+  return `${Math.round(w)} W`;
+}
+
 export function ComponentLibrary() {
   const library = useLibrary();
   const { workspace, upsertCustomComponent, deleteComponent, restoreComponent } = useWorkspace();
-
-  const [filter, setFilter] = useState<ComponentCategory | 'all'>('all');
+  const [cat, setCat] = useState<ComponentCategory | 'all'>('all');
+  const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Component | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  const allParts = useMemo(() => Object.values(library), [library]);
+  const totalCount = allParts.length;
+
+  const visibleParts = useMemo(() => {
+    const qLower = q.trim().toLowerCase();
+    return allParts.filter((p) => {
+      if (cat !== 'all' && p.category !== cat) return false;
+      if (qLower === '') return true;
+      const hay = `${p.vendor} ${p.model} ${describeSpec(p)}`.toLowerCase();
+      return hay.includes(qLower);
+    });
+  }, [allParts, cat, q]);
+
   const grouped = useMemo(() => {
-    const byCat = new Map<ComponentCategory, Component[]>();
-    for (const c of Object.values(library)) {
-      const arr = byCat.get(c.category) ?? [];
-      arr.push(c);
-      byCat.set(c.category, arr);
+    const m = new Map<ComponentCategory, Component[]>();
+    for (const p of visibleParts) {
+      const arr = m.get(p.category) ?? [];
+      arr.push(p);
+      m.set(p.category, arr);
     }
-    for (const arr of byCat.values()) {
+    for (const arr of m.values()) {
       arr.sort((a, b) => a.vendor.localeCompare(b.vendor) || a.model.localeCompare(b.model));
     }
-    return byCat;
-  }, [library]);
+    return m;
+  }, [visibleParts]);
 
-  const filteredCats = filter === 'all' ? categoryOrder : [filter];
-  const totalCount = Object.keys(library).length;
+  const catCounts = useMemo(() => {
+    const c: Record<ComponentCategory, number> = {
+      chassis: 0, cpu: 0, ram: 0, hdd: 0, nvme_ssd: 0, sata_ssd: 0, hba: 0, nic: 0, psu: 0,
+    };
+    for (const p of allParts) c[p.category]++;
+    return c;
+  }, [allParts]);
 
   const tombstoned = useMemo(() => {
     const map = new Map(bundledList.map((c) => [c.id, c]));
@@ -95,162 +116,142 @@ export function ComponentLibrary() {
   }
 
   return (
-    <div className="p-4 max-w-6xl mx-auto space-y-4">
-      <FreshnessBanner />
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Component Library</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            {totalCount} components ({workspace.custom_components.length} custom) · pricing freshness shown per row
-          </p>
-        </div>
-        <div className="flex gap-2 items-center">
-          <select
-            aria-label="Filter components by category"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as ComponentCategory | 'all')}
-            className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-          >
-            <option value="all">All categories</option>
+    <div className="screen">
+      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '18px', alignItems: 'start' }}>
+        <div className="stack-sm" style={{ position: 'sticky', top: 0 }}>
+          <span className="microlabel" style={{ padding: '0 10px' }}>Categories</span>
+          <div className="cats">
+            <button type="button" className={cat === 'all' ? 'on' : ''} onClick={() => setCat('all')}>
+              <span>All</span><span className="n">{totalCount}</span>
+            </button>
             {categoryOrder.map((c) => (
-              <option key={c} value={c}>
-                {categoryLabels[c]}
-              </option>
+              <button key={c} type="button" className={cat === c ? 'on' : ''} onClick={() => setCat(c)}>
+                <span>{categoryLabels[c]}</span><span className="n">{catCounts[c]}</span>
+              </button>
             ))}
-          </select>
-          <button
-            onClick={() => {
-              setEditing(null);
-              setShowForm((s) => !s);
-            }}
-            className="px-3 py-1 text-sm bg-slate-900 text-white rounded"
-          >
-            {showForm && !editing ? 'Close form' : '+ Custom component'}
-          </button>
+          </div>
         </div>
-      </div>
 
-      {(showForm || editing) ? (
-        <CustomComponentForm
-          initial={editing ?? undefined}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setShowForm(false);
-            setEditing(null);
-          }}
-        />
-      ) : null}
+        <div className="stack">
+          <div className="row">
+            <input
+              className="inp grow"
+              placeholder="Search vendor, model, spec…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              style={{ maxWidth: '320px' }}
+              aria-label="Search components"
+            />
+            <span className="grow" />
+            <span className="counts">prices = public list, per-row freshness</span>
+            <button
+              className="btn prime"
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setShowForm((s) => !s);
+              }}
+            >
+              {showForm && !editing ? 'Close form' : '+ Custom part'}
+            </button>
+          </div>
 
-      <div className="space-y-6">
-        {filteredCats.map((cat) => {
-          const items = grouped.get(cat) ?? [];
-          if (items.length === 0) return null;
-          return (
-            <section key={cat}>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-700 dark:text-slate-300 mb-2">
-                {categoryLabels[cat]} <span className="text-slate-400">({items.length})</span>
-              </h3>
-              <div className="bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-left">
+          {showForm || editing ? (
+            <CustomComponentForm
+              initial={editing ?? undefined}
+              onSubmit={handleSubmit}
+              onCancel={() => {
+                setShowForm(false);
+                setEditing(null);
+              }}
+            />
+          ) : null}
+
+          {(cat === 'all' ? categoryOrder : [cat as ComponentCategory]).map((c) => {
+            const items = grouped.get(c);
+            if (!items || items.length === 0) return null;
+            return (
+              <Panel key={c} title={`${categoryLabels[c]} — ${items.length}`} tight>
+                <table className="tbl">
+                  <thead>
                     <tr>
-                      <th className="px-3 py-2 font-medium">Vendor</th>
-                      <th className="px-3 py-2 font-medium">Model</th>
-                      <th className="px-3 py-2 font-medium">Spec</th>
-                      <th className="px-3 py-2 font-medium text-right">Price</th>
-                      <th className="px-3 py-2 font-medium text-right">Typ. W</th>
-                      <th className="px-3 py-2 font-medium">Freshness</th>
-                      <th className="px-3 py-2 font-medium text-right">Actions</th>
+                      <th style={{ width: '110px' }}>Vendor</th>
+                      <th>Model</th>
+                      <th>Spec</th>
+                      <th className="r">Price</th>
+                      <th className="r">Typ. W</th>
+                      <th>As of</th>
+                      <th className="r" style={{ width: '110px' }} />
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((c) => {
-                      const isBundled = bundledIds.has(c.id);
-                      const isCustom = workspace.custom_components.some((x) => x.id === c.id);
-                      const bundledPrice = bundledById.get(c.id)?.price_usd;
-                      const priceModified = isCustom && bundledPrice !== undefined && bundledPrice !== c.price_usd;
+                    {items.map((p) => {
+                      const isBundled = bundledIds.has(p.id);
+                      const isCustom = workspace.custom_components.some((x) => x.id === p.id);
+                      const bundledPrice = bundledById.get(p.id)?.price_usd;
+                      const priceModified = isCustom && bundledPrice !== undefined && bundledPrice !== p.price_usd;
                       const isOverride = isBundled && isCustom;
                       return (
-                        <tr key={c.id} className="border-t">
-                          <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{c.vendor}</td>
-                          <td className="px-3 py-2 font-medium">
-                            {c.model}
-                            {isCustom && !isBundled ? <span className="ml-1 text-[10px] uppercase bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 px-1 rounded">custom</span> : null}
-                            {isOverride ? <span className="ml-1 text-[10px] uppercase bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-1 rounded">overridden</span> : null}
+                        <tr key={p.id}>
+                          <td style={{ color: 'var(--text2)' }}>{p.vendor}</td>
+                          <td>
+                            <span style={{ fontWeight: 600 }}>{p.model}</span>
+                            {isCustom && !isBundled ? <span className="tag" style={{ marginLeft: 6 }}>custom</span> : null}
+                            {isOverride ? <span className="tag muted" style={{ marginLeft: 6 }}>overridden</span> : null}
                           </td>
-                          <td className="px-3 py-2 text-slate-600 dark:text-slate-400">{describeSpec(c)}</td>
-                          <td className="px-3 py-2 text-right">
+                          <td className="spec">{describeSpec(p)}</td>
+                          <td className="r price">
                             <EditablePrice
-                              value={c.price_usd}
+                              value={p.price_usd}
                               modified={priceModified}
-                              onSave={(price_usd) => upsertCustomComponent({ ...c, price_usd } as Component)}
+                              onSave={(price_usd) => upsertCustomComponent({ ...p, price_usd } as Component)}
                             />
                           </td>
-                          <td className="px-3 py-2 text-right">{format_power(c.watts_typical)}</td>
-                          <td className="px-3 py-2">
-                            <FreshnessChip date={c.as_of_date} />
-                          </td>
-                          <td className="px-3 py-2 text-right space-x-1">
-                            <button
-                              onClick={() => setEditing(c)}
-                              className="text-xs px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded"
-                              title={isBundled && !isCustom ? 'Edit (creates a custom override)' : 'Edit'}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => deleteComponent(c.id, isBundled && !isCustom)}
-                              className="text-xs px-2 py-0.5 bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded"
-                              title={
-                                isOverride
-                                  ? 'Revert to bundled price/specs'
-                                  : isBundled
-                                  ? 'Tombstone bundled component (restorable below)'
-                                  : 'Delete custom component'
-                              }
-                            >
-                              {isOverride ? 'Revert' : isBundled ? 'Hide' : 'Delete'}
-                            </button>
+                          <td className="r spec">{fmtWatts(p.watts_typical)}</td>
+                          <td><Freshness asof={p.as_of_date} /></td>
+                          <td className="r">
+                            <span className="row-actions">
+                              <button className="btn sm" type="button" onClick={() => setEditing(p)}>Edit</button>
+                              <button
+                                className="btn sm danger"
+                                type="button"
+                                title={isOverride ? 'Revert to bundled price/specs' : isBundled ? 'Hide bundled (restorable below)' : 'Delete custom'}
+                                onClick={() => deleteComponent(p.id, isBundled && !isCustom)}
+                              >
+                                {isOverride ? 'Revert' : isBundled ? 'Hide' : 'Delete'}
+                              </button>
+                            </span>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-              </div>
-            </section>
-          );
-        })}
-      </div>
+              </Panel>
+            );
+          })}
 
-      {tombstoned.length > 0 ? (
-        <section>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
-            Hidden bundled components ({tombstoned.length})
-          </h3>
-          <div className="bg-white dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody>
-                {tombstoned.map((c) => (
-                  <tr key={c.id} className="border-t">
-                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
-                      {c.vendor} {c.model} ({categoryLabels[c.category]})
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <button
-                        onClick={() => restoreComponent(c.id)}
-                        className="text-xs px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded"
-                      >
-                        Restore
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
+          {tombstoned.length > 0 ? (
+            <Panel title={`Hidden bundled components — ${tombstoned.length}`} tight>
+              <table className="tbl">
+                <tbody>
+                  {tombstoned.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ color: 'var(--text3)' }}>{c.vendor} {c.model}</td>
+                      <td className="spec">{categoryLabels[c.category]}</td>
+                      <td className="r">
+                        <button className="btn sm" type="button" onClick={() => restoreComponent(c.id)}>
+                          Restore
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Panel>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

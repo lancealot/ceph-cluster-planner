@@ -3,8 +3,9 @@ import { useWorkspace } from '../../state/workspace';
 import { useLibrary } from '../../state/useLibrary';
 import type { RackConfig } from '../../types/rack';
 import { deriveRack, validateRack } from '../../calc/rack';
+import { Panel } from '../Shell/primitives';
+import { RackElevation } from './RackElevation';
 import { WarningsList } from '../Common/WarningsList';
-import { format_bytes, format_power, format_usd } from '../../calc/units';
 
 function newRack(): RackConfig {
   return {
@@ -16,30 +17,42 @@ function newRack(): RackConfig {
   };
 }
 
-function Bar({ used, capacity, color }: { used: number; capacity: number; color: string }) {
+function fmtCap(bytes: number): string {
+  const tb = bytes / 1e12;
+  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
+  return `${tb.toFixed(2)} TB`;
+}
+function fmtUsd(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
+function fmtKw(w: number): string {
+  return `${(w / 1000).toFixed(2)} kW`;
+}
+
+function Meter({ used, capacity, label }: { used: number; capacity: number; label: string }) {
   const pct = capacity > 0 ? Math.min(100, (used / capacity) * 100) : 0;
-  const over = used > capacity;
+  const hot = pct >= 90;
   return (
-    <div className="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={used}>
-      <div className={`h-full ${over ? 'bg-rose-500' : color}`} style={{ width: `${pct}%` }} />
+    <div className="wf-row">
+      <span className="lbl mono" style={{ fontSize: '10.5px', color: 'var(--text3)' }}>{label}</span>
+      <span />
+      <span className={'meter' + (hot ? ' warnlvl' : '')} style={{ gridColumn: '1 / -1' }}>
+        <div style={{ width: pct + '%' }} />
+      </span>
     </div>
   );
 }
 
 export function RackBuilder() {
-  const { workspace, upsertRack, deleteRack } = useWorkspace();
+  const { workspace, upsertRack, deleteRack, updateCluster } = useWorkspace();
   const library = useLibrary();
   const defaults = workspace.cluster.defaults;
-
   const nodeMap = useMemo(() => new Map(workspace.nodes.map((n) => [n.id, n])), [workspace.nodes]);
 
   const [selectedId, setSelectedId] = useState<string | null>(workspace.racks[0]?.id ?? null);
-
-  const selected = useMemo(
-    () => workspace.racks.find((r) => r.id === selectedId) ?? null,
-    [workspace.racks, selectedId]
-  );
-
+  const selected = useMemo(() => workspace.racks.find((r) => r.id === selectedId) ?? null, [workspace.racks, selectedId]);
   const derived = selected ? deriveRack(selected, nodeMap, library, defaults) : null;
   const issues = selected && derived ? validateRack(selected, derived) : [];
 
@@ -48,208 +61,171 @@ export function RackBuilder() {
     upsertRack(r);
     setSelectedId(r.id);
   }
-
   function update(patch: Partial<RackConfig>) {
     if (!selected) return;
     upsertRack({ ...selected, ...patch });
   }
 
-  return (
-    <div className="p-4 grid grid-cols-[260px_1fr] gap-4 max-w-7xl mx-auto">
-      <aside className="space-y-2">
-        <button onClick={startNew} className="px-2 py-1 text-sm bg-slate-900 text-white rounded w-full">
-          + New rack
-        </button>
-        <ul className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded divide-y">
-          {workspace.racks.length === 0 ? (
-            <li className="p-3 text-sm text-slate-500 dark:text-slate-400">No rack configs yet.</li>
-          ) : (
-            workspace.racks.map((r) => (
-              <li
-                key={r.id}
-                className={`p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 ${selectedId === r.id ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
-                onClick={() => setSelectedId(r.id)}
-              >
-                <div className="text-sm font-medium truncate">{r.name || '(unnamed)'}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {r.ru_capacity} RU · {(r.power_capacity_w / 1000).toFixed(1)} kW
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
-      </aside>
+  function rackInstancesIn(id: string): number {
+    return workspace.cluster.racks.find((r) => r.rack_config_id === id)?.count ?? 0;
+  }
 
-      <section>
-        {!selected ? (
-          <div className="text-sm text-slate-500 dark:text-slate-400 p-4">Select a rack or create one.</div>
+  return (
+    <div className="screen">
+      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 18, alignItems: 'start' }}>
+        <div className="stack-sm">
+          <button className="btn prime sm" type="button" onClick={startNew}>+ New rack config</button>
+          <div className="panel itemlist">
+            {workspace.racks.length === 0 ? (
+              <button type="button" style={{ cursor: 'default' }}>
+                <div className="t" style={{ color: 'var(--text3)', fontWeight: 400 }}>No rack configs yet</div>
+                <div className="s">Click + New to start</div>
+              </button>
+            ) : (
+              workspace.racks.map((r) => {
+                const d = deriveRack(r, nodeMap, library, defaults);
+                return (
+                  <button key={r.id} type="button" className={selectedId === r.id ? 'on' : ''} onClick={() => setSelectedId(r.id)}>
+                    <div className="t">{r.name || '(unnamed)'}</div>
+                    <div className="s">
+                      {d.ru_used}/{r.ru_capacity}U · {fmtKw(d.power_typical_w)} typ · ×{rackInstancesIn(r.id)} in cluster
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {!selected || !derived ? (
+          <Panel>
+            <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>Select a rack or create one.</p>
+          </Panel>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</label>
-                <input
-                  value={selected.name}
-                  onChange={(e) => update({ name: e.target.value })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                />
+          <div className="stack">
+            <div className="row">
+              <div className="field grow">
+                <span className="microlabel">Rack name</span>
+                <input className="inp" value={selected.name} onChange={(e) => update({ name: e.target.value })} />
               </div>
-              <div className="w-24">
-                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">RU cap</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={selected.ru_capacity}
-                  onChange={(e) => update({ ru_capacity: Math.max(1, parseInt(e.target.value) || 1) })}
-                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                />
+              <div className="field" style={{ width: 110 }}>
+                <span className="microlabel">RU capacity</span>
+                <input className="inp mono" type="number" min={1} value={selected.ru_capacity} onChange={(e) => update({ ru_capacity: Math.max(1, parseInt(e.target.value) || 1) })} />
               </div>
-              <div className="w-32">
-                <label className="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Power (W)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={selected.power_capacity_w}
-                  onChange={(e) =>
-                    update({ power_capacity_w: Math.max(0, parseInt(e.target.value) || 0) })
-                  }
-                  className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-                />
+              <div className="field" style={{ width: 110 }}>
+                <span className="microlabel">Power cap kW</span>
+                <input className="inp mono" type="number" min={0} step={0.1} value={(selected.power_capacity_w / 1000).toFixed(1)} onChange={(e) => update({ power_capacity_w: Math.max(0, (parseFloat(e.target.value) || 0) * 1000) })} />
               </div>
               <button
+                className="btn danger"
+                type="button"
+                style={{ alignSelf: 'flex-end' }}
                 onClick={() => {
                   deleteRack(selected.id);
                   setSelectedId(null);
+                  updateCluster({
+                    ...workspace.cluster,
+                    racks: workspace.cluster.racks.filter((r) => r.rack_config_id !== selected.id),
+                  });
                 }}
-                className="px-2 py-1 text-sm bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded"
               >
                 Delete
               </button>
             </div>
 
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-              <h4 className="text-sm font-semibold">Nodes in rack</h4>
-              {selected.nodes.length === 0 ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">No nodes yet. Add some from the dropdown below.</p>
-              ) : (
-                selected.nodes.map((slot, idx) => (
-                  <div key={idx} className="grid grid-cols-[1fr_4rem_2rem] gap-1 items-end">
-                    <select
-                      value={slot.node_config_id}
-                      onChange={(e) =>
-                        update({
-                          nodes: selected.nodes.map((s, i) =>
-                            i === idx ? { ...s, node_config_id: e.target.value } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    >
-                      <option value="">— select node config —</option>
-                      {workspace.nodes.map((n) => (
-                        <option key={n.id} value={n.id}>
-                          {n.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={slot.count}
-                      onChange={(e) =>
-                        update({
-                          nodes: selected.nodes.map((s, i) =>
-                            i === idx ? { ...s, count: Math.max(1, parseInt(e.target.value) || 1) } : s
-                          ),
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm bg-white dark:bg-slate-800"
-                    />
-                    <button
-                      onClick={() => update({ nodes: selected.nodes.filter((_, i) => i !== idx) })}
-                      className="text-rose-700 dark:text-rose-300 text-sm"
-                      aria-label="Remove node slot"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))
-              )}
-              <button
-                onClick={() =>
-                  update({
-                    nodes: [...selected.nodes, { node_config_id: workspace.nodes[0]?.id ?? '', count: 1 }],
-                  })
-                }
-                className="text-sm text-sky-700 dark:text-sky-300 hover:underline"
-                disabled={workspace.nodes.length === 0}
-              >
-                + Add node slot
-              </button>
-            </div>
-
-            {derived ? (
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Derived</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <span>RU used</span>
-                      <span>
-                        {derived.ru_used} / {derived.ru_capacity}
-                      </span>
-                    </div>
-                    <Bar used={derived.ru_used} capacity={derived.ru_capacity} color="bg-sky-500" />
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <span>Power (max)</span>
-                      <span>
-                        {format_power(derived.power_max_w)} / {format_power(derived.power_capacity_w)}
-                      </span>
-                    </div>
-                    <Bar used={derived.power_max_w} capacity={derived.power_capacity_w} color="bg-emerald-500" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Nodes:</span> {derived.node_count}
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">OSDs:</span> {derived.total_osd_count}
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Raw capacity:</span> {format_bytes(derived.total_raw_bytes)}
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400">Cost:</span> {format_usd(derived.cost_usd)}
-                  </div>
-                </div>
-                <div className="text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">Binding constraint: </span>
-                  <span
-                    className={`font-semibold ${
-                      derived.binding_constraint === 'power'
-                        ? 'text-emerald-700 dark:text-emerald-300'
-                        : derived.binding_constraint === 'ru'
-                        ? 'text-sky-700 dark:text-sky-300'
-                        : 'text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {derived.binding_constraint}
-                  </span>{' '}
-                  · room for {derived.available_headroom_units} more of the dominant node type
-                </div>
+            {derived.binding_constraint !== 'none' && derived.available_headroom_units !== Infinity ? (
+              <div className="bindbadge">
+                <span className="dot warn" />
+                {derived.binding_constraint === 'ru'
+                  ? `RU binds first — ${derived.ru_capacity - derived.ru_used}U free; ${derived.available_headroom_units} more node${derived.available_headroom_units === 1 ? '' : 's'} fit.`
+                  : `Power binds first — ${fmtKw(derived.power_capacity_w - derived.power_max_w)} headroom; ${derived.available_headroom_units} more node${derived.available_headroom_units === 1 ? '' : 's'} fit.`}
               </div>
             ) : null}
 
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3">
-              <h4 className="text-sm font-semibold mb-2">Validation</h4>
-              <WarningsList issues={issues} empty="No issues — rack is clean." />
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, alignItems: 'start' }}>
+              <div className="stack-sm">
+                <span className="microlabel">Elevation — {selected.ru_capacity}U</span>
+                <RackElevation rack={selected} nodeMap={nodeMap} library={library} />
+              </div>
+
+              <div className="stack">
+                <div className="stats" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="stat"><span className="microlabel">RU used</span><div className="v">{derived.ru_used} <small>/ {selected.ru_capacity}</small></div></div>
+                  <div className="stat"><span className="microlabel">Power typ</span><div className="v">{fmtKw(derived.power_typical_w)}</div></div>
+                  <div className="stat"><span className="microlabel">Power max</span><div className="v">{fmtKw(derived.power_max_w)}</div></div>
+                  <div className="stat"><span className="microlabel">Raw capacity</span><div className="v">{fmtCap(derived.total_raw_bytes)}</div></div>
+                  <div className="stat"><span className="microlabel">OSDs</span><div className="v">{derived.total_osd_count}</div></div>
+                  <div className="stat"><span className="microlabel">Rack cost</span><div className="v">{fmtUsd(derived.cost_usd)}</div></div>
+                </div>
+
+                <Panel title="Utilization">
+                  <div className="stack-sm">
+                    <Meter
+                      used={derived.ru_used}
+                      capacity={selected.ru_capacity}
+                      label={`RU — ${derived.ru_used} / ${selected.ru_capacity} (${selected.ru_capacity > 0 ? Math.round((derived.ru_used / selected.ru_capacity) * 100) : 0}%)`}
+                    />
+                    <Meter
+                      used={derived.power_typical_w}
+                      capacity={selected.power_capacity_w}
+                      label={`Power typical — ${fmtKw(derived.power_typical_w)} / ${fmtKw(selected.power_capacity_w)} (${selected.power_capacity_w > 0 ? Math.round((derived.power_typical_w / selected.power_capacity_w) * 100) : 0}%)`}
+                    />
+                    <Meter
+                      used={derived.power_max_w}
+                      capacity={selected.power_capacity_w}
+                      label={`Power max — ${fmtKw(derived.power_max_w)} / ${fmtKw(selected.power_capacity_w)} (${selected.power_capacity_w > 0 ? Math.round((derived.power_max_w / selected.power_capacity_w) * 100) : 0}%)`}
+                    />
+                  </div>
+                </Panel>
+
+                <Panel
+                  title="Nodes in rack"
+                  right={
+                    <button
+                      className="btn link sm"
+                      type="button"
+                      disabled={workspace.nodes.length === 0}
+                      onClick={() => update({ nodes: [...selected.nodes, { node_config_id: workspace.nodes[0]?.id ?? '', count: 1 }] })}
+                    >
+                      + Add node config
+                    </button>
+                  }
+                >
+                  <div className="stack-sm">
+                    {selected.nodes.length === 0 ? (
+                      <span className="counts">No node configs in this rack.</span>
+                    ) : null}
+                    {selected.nodes.map((slot, idx) => (
+                      <div className="slotrow card" key={idx}>
+                        <select
+                          className="sel"
+                          value={slot.node_config_id}
+                          onChange={(e) => update({ nodes: selected.nodes.map((s, i) => (i === idx ? { ...s, node_config_id: e.target.value } : s)) })}
+                        >
+                          <option value="">— select node config —</option>
+                          {workspace.nodes.map((n) => (<option key={n.id} value={n.id}>{n.name}</option>))}
+                        </select>
+                        <input
+                          className="inp mono"
+                          type="number"
+                          min={0}
+                          value={slot.count}
+                          onChange={(e) => update({ nodes: selected.nodes.map((s, i) => (i === idx ? { ...s, count: Math.max(0, parseInt(e.target.value) || 0) } : s)) })}
+                        />
+                        <button className="xbtn" type="button" aria-label="Remove node config" onClick={() => update({ nodes: selected.nodes.filter((_, i) => i !== idx) })}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
+
+                <Panel title="Rack validation">
+                  <WarningsList issues={issues} empty="Rack is clean — no validation issues." />
+                </Panel>
+              </div>
             </div>
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }
