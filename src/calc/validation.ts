@@ -122,18 +122,19 @@ export function validateNode(
   }
 
   if (d.osd_count > 0) {
-    const coresPerOsd = d.cpu_cores_total / d.osd_count;
-    const threshold =
-      d.nvme_osd_count > 0 ? CORES_PER_OSD_NVME_THRESHOLD : CORES_PER_OSD_HDD_THRESHOLD;
-    if (coresPerOsd < threshold) {
+    // Weighted per-class CPU budget: HDD OSDs and NVMe OSDs have different core
+    // needs, and a mixed node shouldn't have every OSD judged by the NVMe bar.
+    // db_wal/cache/system drives are not OSDs and carry no core requirement.
+    const requiredCores =
+      d.hdd_osd_count * CORES_PER_OSD_HDD_THRESHOLD +
+      d.nvme_osd_count * CORES_PER_OSD_NVME_THRESHOLD;
+    if (d.cpu_cores_total < requiredCores) {
       issues.push({
         severity: 'warning',
         code: 'node.cores_per_osd_low',
         scope: 'node',
         ref_id: node.id,
-        message: `${coresPerOsd.toFixed(2)} cores/OSD below ${threshold} threshold (${
-          d.nvme_osd_count > 0 ? 'NVMe OSDs present' : 'HDD-only'
-        })`,
+        message: `${d.cpu_cores_total} cores < ${requiredCores} required (${d.hdd_osd_count} HDD OSD × ${CORES_PER_OSD_HDD_THRESHOLD} + ${d.nvme_osd_count} NVMe OSD × ${CORES_PER_OSD_NVME_THRESHOLD})`,
       });
     }
   }
