@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useWorkspace } from '../../state/workspace';
 import { useScenarios } from '../../state/useScenarios';
 import { useLibrary } from '../../state/useLibrary';
@@ -7,14 +7,12 @@ import {
   computeForWorkspace,
   diff,
   serialize,
-  type ScenarioDiff,
 } from '../../calc/scenario';
 import { deserialize } from '../../calc/scenario';
 import { buildSc846ReferenceScenario } from '../../scenarios/sc846-reference';
-import { buildShareUrl } from '../../calc/shareLink';
-import { format_bytes, format_power, format_usd } from '../../calc/units';
-import { WarningsList } from '../Common/WarningsList';
+import { Panel } from '../Shell/primitives';
 import type { Scenario } from '../../types/scenario';
+import type { ScenarioDiff } from '../../calc/scenario';
 
 function downloadScenario(s: Scenario) {
   const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
@@ -28,49 +26,81 @@ function downloadScenario(s: Scenario) {
   URL.revokeObjectURL(url);
 }
 
-function DeltaRow({ label, value, format }: { label: string; value: number; format: (n: number) => string }) {
-  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
-  const cls = value > 0 ? 'text-emerald-700 dark:text-emerald-300' : value < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-600 dark:text-slate-400';
-  return (
-    <tr className="border-t">
-      <td className="px-2 py-1 text-slate-600 dark:text-slate-400">{label}</td>
-      <td className={`px-2 py-1 text-right font-mono ${cls}`}>
-        {sign}{format(Math.abs(value))}
-      </td>
-    </tr>
-  );
+function fmtCap(bytes: number): string {
+  const tb = bytes / 1e12;
+  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
+  if (tb >= 1) return `${tb.toFixed(2)} TB`;
+  return `${(tb * 1000).toFixed(0)} GB`;
+}
+function fmtUsd(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
+function fmtPower(w: number): string {
+  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
+  return `${Math.round(w)} W`;
+}
+function fmtSigned(n: number, fmt: (v: number) => string): { text: string; dir: number } {
+  const sign = n > 0 ? '+' : n < 0 ? '−' : '';
+  return { text: `${sign}${fmt(Math.abs(n))}`, dir: n > 0 ? 1 : n < 0 ? -1 : 0 };
 }
 
-function DiffPanel({ result }: { result: ScenarioDiff }) {
+function DiffTable({ result }: { result: ScenarioDiff }) {
+  const rows = [
+    { label: 'Cost', a: result.delta.cost_usd, fmt: fmtUsd, lowerBetter: true },
+    { label: 'Power (typ)', a: result.delta.power_typical_w, fmt: fmtPower, lowerBetter: true },
+    { label: 'Power (max)', a: result.delta.power_max_w, fmt: fmtPower, lowerBetter: true },
+    { label: 'Raw capacity', a: result.delta.raw_capacity_bytes, fmt: fmtCap, lowerBetter: false },
+    { label: 'Usable capacity', a: result.delta.usable_capacity_bytes, fmt: fmtCap, lowerBetter: false },
+    { label: 'Rack count', a: result.delta.rack_count, fmt: (n: number) => `${n}`, lowerBetter: true },
+    { label: 'Node count', a: result.delta.node_count, fmt: (n: number) => `${n}`, lowerBetter: true },
+    { label: 'OSD count', a: result.delta.osd_count, fmt: (n: number) => `${n}`, lowerBetter: false },
+  ];
   return (
-    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-      <h4 className="text-sm font-semibold">
-        Diff: <span className="text-slate-500 dark:text-slate-400">{result.base_name}</span> →{' '}
-        <span className="text-slate-900 dark:text-slate-100">{result.compare_name}</span>
-      </h4>
-      <table className="w-full text-sm">
-        <tbody>
-          <DeltaRow label="Cost" value={result.delta.cost_usd} format={format_usd} />
-          <DeltaRow label="Power (typical)" value={result.delta.power_typical_w} format={format_power} />
-          <DeltaRow label="Power (max)" value={result.delta.power_max_w} format={format_power} />
-          <DeltaRow label="Raw capacity" value={result.delta.raw_capacity_bytes} format={format_bytes} />
-          <DeltaRow label="Usable capacity" value={result.delta.usable_capacity_bytes} format={format_bytes} />
-          <DeltaRow label="Rack count" value={result.delta.rack_count} format={(n) => `${n}`} />
-          <DeltaRow label="Node count" value={result.delta.node_count} format={(n) => `${n}`} />
-          <DeltaRow label="OSD count" value={result.delta.osd_count} format={(n) => `${n}`} />
-        </tbody>
-      </table>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <h5 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Warnings introduced</h5>
-          <WarningsList issues={result.warnings_introduced} empty="None new." />
-        </div>
-        <div>
-          <h5 className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Warnings resolved</h5>
-          <WarningsList issues={result.warnings_resolved} empty="None resolved." />
-        </div>
-      </div>
-    </div>
+    <table className="tbl">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th className="r">{result.base_name}</th>
+          <th className="r">{result.compare_name}</th>
+          <th className="r">Δ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => {
+          const s = fmtSigned(r.a, r.fmt);
+          const favorable = r.lowerBetter ? s.dir < 0 : s.dir > 0;
+          const unfavorable = r.lowerBetter ? s.dir > 0 : s.dir < 0;
+          const cls = s.dir === 0 ? 'delta-zero' : favorable ? 'delta-pos' : unfavorable ? 'delta-neg' : 'delta-zero';
+          return (
+            <tr key={r.label}>
+              <td style={{ color: 'var(--text2)' }}>{r.label}</td>
+              <td className="r price">—</td>
+              <td className="r price">—</td>
+              <td className={'r price ' + cls}>{s.text}</td>
+            </tr>
+          );
+        })}
+        <tr>
+          <td style={{ color: 'var(--text2)' }}>Warnings</td>
+          <td className="r price">—</td>
+          <td className="r price">—</td>
+          <td className="r price">
+            {result.warnings_introduced.length > 0 ? (
+              <span className="delta-neg">+{result.warnings_introduced.length} new</span>
+            ) : null}
+            {result.warnings_introduced.length > 0 && result.warnings_resolved.length > 0 ? ' · ' : ''}
+            {result.warnings_resolved.length > 0 ? (
+              <span className="delta-pos">−{result.warnings_resolved.length} resolved</span>
+            ) : null}
+            {result.warnings_introduced.length === 0 && result.warnings_resolved.length === 0 ? (
+              <span className="delta-zero">no change</span>
+            ) : null}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
@@ -78,22 +108,17 @@ export function ScenarioManager() {
   const { workspace, dispatch } = useWorkspace();
   const { scenarios, add, remove, rename } = useScenarios();
   const library = useLibrary();
-
+  const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [baseId, setBaseId] = useState<string>('');
   const [compareId, setCompareId] = useState<string>('');
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
 
-  async function copyShareLink() {
-    setShareMessage(null);
-    const url = buildShareUrl(workspace, name.trim() || 'shared workspace');
-    try {
-      await navigator.clipboard.writeText(url);
-      setShareMessage(`Link copied (${url.length.toLocaleString()} chars). Anyone opening it will be asked before replacing their workspace.`);
-    } catch {
-      setShareMessage(`Copy failed — here is the link:\n${url}`);
-    }
+  const currentComputed = useMemo(() => computeForWorkspace(workspace, library), [workspace, library]);
+
+  function flashMsg(msg: string) {
+    setFlash(msg);
+    setTimeout(() => setFlash(null), 3000);
   }
 
   function saveCurrent() {
@@ -101,174 +126,153 @@ export function ScenarioManager() {
     add(serialize(workspace, scenarioName));
     setName('');
   }
-
   function loadScenario(id: string) {
     const s = scenarios.find((x) => x.id === id);
     if (!s) return;
     dispatch({ type: 'replace_workspace', workspace: s.workspace });
   }
-
   function loadBundled() {
     const s = buildSc846ReferenceScenario();
     add(s);
     dispatch({ type: 'replace_workspace', workspace: s.workspace });
   }
-
+  function exportCurrent() {
+    downloadScenario(serialize(workspace, workspace.cluster.name || 'workspace-export'));
+  }
   async function importFromFile(file: File) {
-    setImportMessage(null);
     try {
       const text = await file.text();
-      const json = JSON.parse(text);
-      const scenario = deserialize(json);
+      const scenario = deserialize(JSON.parse(text));
       add(scenario);
-      setImportMessage(`Imported "${scenario.name}".`);
+      flashMsg(`Imported "${scenario.name}".`);
     } catch (err) {
       if (err instanceof ScenarioImportError) {
-        const detail = err.issues
-          .slice(0, 3)
-          .map((i) => `• ${i.path || '(root)'}: ${i.message}`)
-          .join('\n');
-        setImportMessage(`Import failed:\n${detail}`);
+        flashMsg(`Import failed: ${err.issues[0]?.message ?? err.message}`);
       } else {
-        setImportMessage(`Import failed: ${(err as Error).message}`);
+        flashMsg(`Import failed: ${(err as Error).message}`);
       }
     }
+    if (fileRef.current) fileRef.current.value = '';
   }
 
   const base = scenarios.find((s) => s.id === baseId);
   const compare = scenarios.find((s) => s.id === compareId);
   const diffResult = base && compare && base.id !== compare.id ? diff(base, compare, library) : null;
-
-  const currentComputed = computeForWorkspace(workspace, library);
+  const workspaceId = JSON.stringify(workspace);
 
   return (
-    <div className="p-4 max-w-7xl mx-auto space-y-4">
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-        <h4 className="text-sm font-semibold">Save current workspace</h4>
-        <div className="flex gap-2">
+    <div className="screen">
+      <div className="screen-inner stack">
+        <div className="row">
           <input
+            className="inp grow"
+            placeholder={`Name (default: Scenario ${scenarios.length + 1})`}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={`Scenario ${scenarios.length + 1}`}
-            className="border rounded px-2 py-1 text-sm flex-1 bg-white dark:bg-slate-800"
+            style={{ maxWidth: 320 }}
           />
-          <button onClick={saveCurrent} className="px-3 py-1 text-sm bg-slate-900 text-white rounded">
-            Save snapshot
-          </button>
-          <button onClick={loadBundled} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded">
-            Load SC846 reference
-          </button>
-          <button onClick={copyShareLink} className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded" title="Copy a URL containing the current workspace">
-            Copy share link
-          </button>
-          <label className="px-3 py-1 text-sm bg-slate-200 dark:bg-slate-700 rounded cursor-pointer">
-            Import .json
+          <button className="btn prime" type="button" onClick={saveCurrent}>Save current as scenario</button>
+          <button className="btn" type="button" onClick={loadBundled}>Load SC846 reference</button>
+          <span className="grow" />
+          <label className="btn sm" style={{ cursor: 'pointer' }}>
+            Import JSON
             <input
+              ref={fileRef}
               type="file"
               accept="application/json"
-              className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 if (f) importFromFile(f);
-                e.target.value = '';
               }}
+              style={{ display: 'none' }}
             />
           </label>
+          <button className="btn sm" type="button" onClick={exportCurrent}>Export JSON</button>
         </div>
-        {importMessage ? (
-          <pre className="text-xs text-rose-700 dark:text-rose-300 whitespace-pre-wrap">{importMessage}</pre>
-        ) : null}
-        {shareMessage ? (
-          <pre className="text-xs text-sky-700 dark:text-sky-300 whitespace-pre-wrap break-all">{shareMessage}</pre>
-        ) : null}
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Current workspace: {currentComputed.cluster.total_node_count} nodes ·{' '}
-          {format_bytes(currentComputed.cluster.total_usable_bytes)} usable ·{' '}
-          {format_usd(currentComputed.cluster.total_cost_usd)} ·{' '}
-          {currentComputed.issues.filter((i) => i.severity === 'error').length} errors,{' '}
-          {currentComputed.issues.filter((i) => i.severity === 'warning').length} warnings
-        </p>
-      </div>
+        {flash ? <span className="counts">{flash}</span> : null}
 
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-2">
-        <h4 className="text-sm font-semibold">Saved scenarios ({scenarios.length})</h4>
-        {scenarios.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">No saved scenarios yet.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-left">
-              <tr>
-                <th className="px-2 py-1">Name</th>
-                <th className="px-2 py-1">Saved</th>
-                <th className="px-2 py-1 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scenarios.map((s) => (
-                <tr key={s.id} className="border-t">
-                  <td className="px-2 py-1">
-                    <input
-                      value={s.name}
-                      onChange={(e) => rename(s.id, e.target.value)}
-                      className="border-0 bg-transparent text-sm w-full focus:bg-white focus:border focus:px-1"
-                    />
-                  </td>
-                  <td className="px-2 py-1 text-slate-500 dark:text-slate-400 font-mono text-xs">{s.created_at.slice(0, 19)}</td>
-                  <td className="px-2 py-1 text-right space-x-1">
-                    <button onClick={() => loadScenario(s.id)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">
-                      Load
-                    </button>
-                    <button onClick={() => downloadScenario(s)} className="text-xs px-2 py-1 bg-slate-200 dark:bg-slate-700 rounded">
-                      Export
-                    </button>
-                    <button onClick={() => remove(s.id)} className="text-xs px-2 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 rounded">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-3 space-y-3">
-        <h4 className="text-sm font-semibold">Compare two scenarios</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="text-sm">
-            <div className="text-xs text-slate-500 dark:text-slate-400">Base</div>
-            <select
-              value={baseId}
-              onChange={(e) => setBaseId(e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value="">— select —</option>
-              {scenarios.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            <div className="text-xs text-slate-500 dark:text-slate-400">Compare</div>
-            <select
-              value={compareId}
-              onChange={(e) => setCompareId(e.target.value)}
-              className="border rounded px-2 py-1 text-sm w-full bg-white dark:bg-slate-800"
-            >
-              <option value="">— select —</option>
-              {scenarios.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div>
+          <span className="counts">
+            Current workspace: {currentComputed.cluster.total_node_count} nodes ·{' '}
+            {fmtCap(currentComputed.cluster.total_usable_bytes)} usable ·{' '}
+            {fmtUsd(currentComputed.cluster.total_cost_usd)} ·{' '}
+            {currentComputed.issues.filter((i) => i.severity === 'error').length} errors,{' '}
+            {currentComputed.issues.filter((i) => i.severity === 'warning').length} warnings
+          </span>
         </div>
-        {diffResult ? <DiffPanel result={diffResult} /> : (
-          <p className="text-xs text-slate-500 dark:text-slate-400">Pick two different scenarios to see deltas.</p>
-        )}
+
+        <div className="scen-grid">
+          {scenarios.length === 0 ? (
+            <Panel>
+              <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>
+                No saved scenarios yet. Build a workspace and click <b>Save current</b>, or load the bundled SC846 reference.
+              </p>
+            </Panel>
+          ) : (
+            scenarios.map((s) => {
+              const isCurrent = JSON.stringify(s.workspace) === workspaceId;
+              const computed = computeForWorkspace(s.workspace, library);
+              const warns = computed.issues.filter((i) => i.severity === 'warning').length;
+              const usableTb = computed.cluster.total_usable_bytes / 1e12;
+              const perTb = usableTb > 0 ? computed.cluster.total_cost_usd / usableTb : 0;
+              return (
+                <div className={'scencard' + (isCurrent ? ' current' : '')} key={s.id}>
+                  <div>
+                    <div className="row">
+                      <input
+                        className="inp"
+                        value={s.name}
+                        onChange={(e) => rename(s.id, e.target.value)}
+                        style={{ flex: 1, fontWeight: 600, fontSize: 13, padding: '4px 8px' }}
+                      />
+                      {isCurrent ? <span className="tag">loaded</span> : null}
+                    </div>
+                    <span className="counts">
+                      saved {s.created_at.slice(0, 10)} · {warns} warning{warns === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div className="scen-metrics">
+                    <span className="m"><span className="microlabel">Usable</span><span className="v">{fmtCap(computed.cluster.total_usable_bytes)}</span></span>
+                    <span className="m"><span className="microlabel">Cost</span><span className="v">{fmtUsd(computed.cluster.total_cost_usd)}</span></span>
+                    <span className="m"><span className="microlabel">Power</span><span className="v">{fmtPower(computed.cluster.total_power_typical_w)}</span></span>
+                    <span className="m"><span className="microlabel">$/TB usable</span><span className="v">{usableTb > 0 ? fmtUsd(perTb) : '—'}</span></span>
+                  </div>
+                  <div className="row">
+                    <button className="btn sm" type="button" onClick={() => loadScenario(s.id)}>Load</button>
+                    <button className="btn sm" type="button" onClick={() => { setBaseId(s.id); setCompareId(scenarios.find((x) => x.id !== s.id)?.id ?? ''); }}>Diff</button>
+                    <button className="btn sm" type="button" onClick={() => downloadScenario(s)}>Export</button>
+                    <span className="grow" />
+                    <button className="btn sm danger" type="button" onClick={() => remove(s.id)}>Delete</button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <Panel
+          title="Diff — A vs B"
+          right={
+            <div className="row">
+              <select className="sel" style={{ width: 'auto', padding: '4px 8px', fontSize: 11.5 }} value={baseId} onChange={(e) => setBaseId(e.target.value)}>
+                <option value="">— A —</option>
+                {scenarios.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
+              </select>
+              <span className="counts">vs</span>
+              <select className="sel" style={{ width: 'auto', padding: '4px 8px', fontSize: 11.5 }} value={compareId} onChange={(e) => setCompareId(e.target.value)}>
+                <option value="">— B —</option>
+                {scenarios.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
+              </select>
+            </div>
+          }
+          tight
+        >
+          {diffResult ? (
+            <DiffTable result={diffResult} />
+          ) : (
+            <p style={{ padding: 14, color: 'var(--text3)', fontSize: 12.5 }}>Pick two different scenarios to see deltas.</p>
+          )}
+        </Panel>
       </div>
     </div>
   );
