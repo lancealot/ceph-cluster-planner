@@ -33,8 +33,8 @@ describe('format_capacity_tb boundary at 1000 TB', () => {
   it('9300 TB displays as 9.30 PB', () => {
     expect(format_capacity_tb(9300)).toBe('9.30 PB');
   });
-  it('sub-TB falls back to GB', () => {
-    expect(format_capacity_tb(0.5)).toBe('500.00 GB');
+  it('sub-TB falls back to GB (0 decimals)', () => {
+    expect(format_capacity_tb(0.5)).toBe('500 GB');
   });
 });
 

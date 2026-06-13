@@ -3,6 +3,7 @@ import { useLibrary } from '../../state/useLibrary';
 import { useWorkspace } from '../../state/workspace';
 import bundled from '../../data/components.json';
 import type { Component, ComponentCategory } from '../../types/components';
+import { format_power } from '../../calc/units';
 import { Panel, Freshness } from '../Shell/primitives';
 import { EditablePrice } from './EditablePrice';
 import { CustomComponentForm } from './CustomComponentForm';
@@ -57,10 +58,6 @@ function describeSpec(c: Component): string {
   }
 }
 
-function fmtWatts(w: number): string {
-  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
-  return `${Math.round(w)} W`;
-}
 
 export function ComponentLibrary() {
   const library = useLibrary();
@@ -207,7 +204,7 @@ export function ComponentLibrary() {
                               onSave={(price_usd) => upsertCustomComponent({ ...p, price_usd } as Component)}
                             />
                           </td>
-                          <td className="r spec">{fmtWatts(p.watts_typical)}</td>
+                          <td className="r spec">{format_power(p.watts_typical)}</td>
                           <td><Freshness asof={p.as_of_date} /></td>
                           <td className="r">
                             <span className="row-actions">

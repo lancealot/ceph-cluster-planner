@@ -3,6 +3,7 @@ import { useWorkspace } from '../../state/workspace';
 import { useLibrary } from '../../state/useLibrary';
 import type { RackConfig } from '../../types/rack';
 import { deriveRack, validateRack } from '../../calc/rack';
+import { format_bytes as fmtCap, format_usd as fmtUsd, format_power_kw as fmtKw } from '../../calc/units';
 import { Panel } from '../Shell/primitives';
 import { RackElevation } from './RackElevation';
 import { WarningsList } from '../Common/WarningsList';
@@ -15,20 +16,6 @@ function newRack(): RackConfig {
     power_capacity_w: 10000,
     nodes: [],
   };
-}
-
-function fmtCap(bytes: number): string {
-  const tb = bytes / 1e12;
-  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
-  return `${tb.toFixed(2)} TB`;
-}
-function fmtUsd(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
-}
-function fmtKw(w: number): string {
-  return `${(w / 1000).toFixed(2)} kW`;
 }
 
 function Meter({ used, capacity, label }: { used: number; capacity: number; label: string }) {

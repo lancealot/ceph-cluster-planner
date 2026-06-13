@@ -10,6 +10,7 @@ import {
 } from '../../calc/scenario';
 import { deserialize } from '../../calc/scenario';
 import { buildSc846ReferenceScenario } from '../../scenarios/sc846-reference';
+import { format_bytes as fmtCap, format_power as fmtPower, format_usd as fmtUsd } from '../../calc/units';
 import { Panel } from '../Shell/primitives';
 import type { Scenario } from '../../types/scenario';
 import type { ScenarioDiff } from '../../calc/scenario';
@@ -26,21 +27,6 @@ function downloadScenario(s: Scenario) {
   URL.revokeObjectURL(url);
 }
 
-function fmtCap(bytes: number): string {
-  const tb = bytes / 1e12;
-  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
-  if (tb >= 1) return `${tb.toFixed(2)} TB`;
-  return `${(tb * 1000).toFixed(0)} GB`;
-}
-function fmtUsd(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
-}
-function fmtPower(w: number): string {
-  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
-  return `${Math.round(w)} W`;
-}
 function fmtSigned(n: number, fmt: (v: number) => string): { text: string; dir: number } {
   const sign = n > 0 ? '+' : n < 0 ? '−' : '';
   return { text: `${sign}${fmt(Math.abs(n))}`, dir: n > 0 ? 1 : n < 0 ? -1 : 0 };

@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-
-function fmtUsd(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
-}
+import { format_usd as fmtUsd } from '../../calc/units';
 
 interface Props {
   value: number;

@@ -4,6 +4,7 @@ import { useLibrary } from '../../state/useLibrary';
 import type { DriveRole, NodeConfig } from '../../types/node';
 import { deriveNode } from '../../calc/node';
 import { validateNode } from '../../calc/validation';
+import { format_bytes, format_usd } from '../../calc/units';
 import { SC846_HDD_ONLY, SC846_WITH_METADATA } from '../../calc/fixtures/sc846';
 import { Panel, Field } from '../Shell/primitives';
 import { BayMap } from './BayMap';
@@ -27,19 +28,6 @@ function newNode(): NodeConfig {
     psu_id: '',
     psu_count: 2,
   };
-}
-
-function fmtCap(bytes: number): string {
-  const tb = bytes / 1e12;
-  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
-  if (tb >= 1) return `${tb.toFixed(2)} TB`;
-  return `${(tb * 1000).toFixed(0)} GB`;
-}
-
-function fmtUsd(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
 }
 
 function CategorySelect({
@@ -108,7 +96,7 @@ export function NodeBuilder() {
 
   function nodeCaption(n: NodeConfig): string {
     const nd = deriveNode(n, library, defaults);
-    return `${n.role ?? 'node'} · ${(nd.raw_capacity_bytes / 1e12).toFixed(0)} TB raw · ${fmtUsd(nd.cost_usd)}`;
+    return `${n.role ?? 'node'} · ${(nd.raw_capacity_bytes / 1e12).toFixed(0)} TB raw · ${format_usd(nd.cost_usd)}`;
   }
 
   return (
@@ -170,7 +158,7 @@ export function NodeBuilder() {
             </div>
 
             <div className="stats">
-              <div className="stat"><span className="microlabel">Raw capacity</span><div className="v">{fmtCap(derived.raw_capacity_bytes)}</div></div>
+              <div className="stat"><span className="microlabel">Raw capacity</span><div className="v">{format_bytes(derived.raw_capacity_bytes)}</div></div>
               <div className="stat"><span className="microlabel">OSDs</span><div className="v">{derived.osd_count} <small>{derived.hdd_osd_count}H · {derived.nvme_osd_count}N</small></div></div>
               <div className={'stat' + (derived.ram_installed_gb < derived.ram_required_gb ? ' bad' : '')}>
                 <span className="microlabel">RAM req / have</span>
@@ -184,7 +172,7 @@ export function NodeBuilder() {
                 <span className="microlabel">PCIe slots</span>
                 <div className="v">{derived.pcie_slots_used} / {derived.pcie_slots_available} <small>{derived.pcie_lanes_used} lanes</small></div>
               </div>
-              <div className="stat"><span className="microlabel">Cost</span><div className="v">{fmtUsd(derived.cost_usd)}</div></div>
+              <div className="stat"><span className="microlabel">Cost</span><div className="v">{format_usd(derived.cost_usd)}</div></div>
             </div>
 
             <div className="cols c2">
