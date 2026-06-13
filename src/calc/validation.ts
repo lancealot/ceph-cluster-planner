@@ -87,13 +87,28 @@ export function validateNode(
 
   const psu = library[node.psu_id];
   if (psu && isPsu(psu)) {
-    if (d.power_max_w > d.psu_capacity_w) {
+    // Redundant PSUs are deployed N+1: the survivable budget is (count-1) × wattage.
+    // A node that needs both supplies running browns out the moment one fails.
+    const budget = d.psu_redundant_capacity_w;
+    if (d.power_max_w > budget) {
+      const redundant = d.psu_count > 1;
       issues.push({
         severity: 'error',
         code: 'node.over_power',
         scope: 'node',
         ref_id: node.id,
-        message: `Max power ${d.power_max_w} W exceeds PSU capacity ${d.psu_capacity_w} W`,
+        message: redundant
+          ? `Max power ${Math.round(d.power_max_w)} W exceeds N+1 PSU budget ${Math.round(budget)} W (${d.psu_count}× ${psu.wattage} W with one failed)`
+          : `Max power ${Math.round(d.power_max_w)} W exceeds PSU capacity ${Math.round(budget)} W`,
+      });
+    } else if (d.psu_count > 1 && d.power_max_w > d.psu_capacity_w * 0.85) {
+      // PSU best operates well under 85% load — flag it but don't error.
+      issues.push({
+        severity: 'warning',
+        code: 'node.psu_high_load',
+        scope: 'node',
+        ref_id: node.id,
+        message: `Max power ${Math.round(d.power_max_w)} W is ${((d.power_max_w / d.psu_capacity_w) * 100).toFixed(0)}% of total PSU capacity — efficiency curve drops above ~85% load`,
       });
     }
   }
@@ -119,6 +134,16 @@ export function validateNode(
         });
       }
     }
+  }
+
+  if (d.hba_ports_needed > d.hba_ports_available) {
+    issues.push({
+      severity: 'error',
+      code: 'node.under_hba_ports',
+      scope: 'node',
+      ref_id: node.id,
+      message: `${d.hba_ports_needed} SAS/SATA drives but only ${d.hba_ports_available} HBA ports available`,
+    });
   }
 
   if (d.osd_count > 0) {

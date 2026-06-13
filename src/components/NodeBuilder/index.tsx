@@ -176,9 +176,9 @@ export function NodeBuilder() {
                 <span className="microlabel">RAM req / have</span>
                 <div className="v">{derived.ram_required_gb} / {derived.ram_installed_gb} <small>GB</small></div>
               </div>
-              <div className={'stat' + (derived.power_max_w > derived.psu_capacity_w ? ' bad' : '')}>
+              <div className={'stat' + (derived.power_max_w > derived.psu_redundant_capacity_w ? ' bad' : '')}>
                 <span className="microlabel">Power typ / max</span>
-                <div className="v">{Math.round(derived.power_typical_w)} / {Math.round(derived.power_max_w)} <small>W</small></div>
+                <div className="v">{Math.round(derived.power_typical_w)} / {Math.round(derived.power_max_w)} <small>W{derived.psu_count > 1 ? ` · N+1 ${Math.round(derived.psu_redundant_capacity_w)}` : ''}</small></div>
               </div>
               <div className={'stat' + (derived.pcie_slots_used > derived.pcie_slots_available ? ' bad' : '')}>
                 <span className="microlabel">PCIe slots</span>

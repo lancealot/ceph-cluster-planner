@@ -230,6 +230,44 @@ describe('EC 8+3 failure-domain edge cases (host)', () => {
   });
 });
 
+describe('Host failure-domain count is tier-aware', () => {
+  it('counts hdd-host count for a tier=hdd pool', () => {
+    // 11 SC846 (HDD-only) nodes → 11 HDD hosts, 0 NVMe hosts.
+    const rack = rackOf(11, 'r');
+    const cluster: ClusterConfig = {
+      id: 'c', name: 'c',
+      racks: [{ rack_config_id: rack.id, count: 1 }],
+      pools: [ecPool({ target_tier: 'hdd' })],
+      defaults: defaultClusterDefaults(),
+    };
+    const derived = deriveCluster(cluster, new Map([[rack.id, rack]]), nodeMap, lib);
+    expect(derived.total_hdd_host_count).toBe(11);
+    expect(derived.total_nvme_host_count).toBe(0);
+    // 11 = k+m for EC 8+3 → tightness warning only, no error.
+    const issues = validatePool(cluster, cluster.pools[0], derived);
+    expect(issues.find((i) => i.code === 'pool.failure_domain_too_few')).toBeUndefined();
+  });
+
+  it('errors when a tier=nvme host-domain pool has no nvme hosts', () => {
+    const rack = rackOf(30, 'r');
+    const cluster: ClusterConfig = {
+      id: 'c', name: 'c',
+      racks: [{ rack_config_id: rack.id, count: 1 }],
+      pools: [
+        {
+          id: 'meta', name: 'meta', type: 'replicated', replicas: 3,
+          failure_domain: 'host', capacity_share: 1, target_tier: 'nvme',
+        },
+      ],
+      defaults: defaultClusterDefaults(),
+    };
+    const derived = deriveCluster(cluster, new Map([[rack.id, rack]]), nodeMap, lib);
+    expect(derived.total_nvme_host_count).toBe(0);
+    const issues = validatePool(cluster, cluster.pools[0], derived);
+    expect(issues.find((i) => i.code === 'pool.failure_domain_too_few')).toBeDefined();
+  });
+});
+
 describe('OSD failure-domain with tier=ssd is treated as flash bucket', () => {
   it('counts NVMe OSDs, not total (so HDD-only cluster errors)', () => {
     const rack = rackOf(11, 'r'); // 11 hosts, 24 HDD OSD each => 264 HDD OSDs, 0 NVMe OSDs

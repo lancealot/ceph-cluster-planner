@@ -32,6 +32,17 @@ export interface NodeDerived {
   pcie_slots_available: number;
   chassis_ru: number;
   psu_capacity_w: number;
+  // What the node can survive on with one PSU failed. Equals psu_capacity_w
+  // when psu_count <= 1; otherwise (count - 1) × wattage. This is the budget
+  // the power check uses — anything that can brown a node out on a single
+  // supply failure is the relevant constraint.
+  psu_redundant_capacity_w: number;
+  psu_count: number;
+  // SAS/SATA port accounting. NVMe drives talk PCIe directly so they don't
+  // count here — only HDDs and SATA SSDs need HBA ports. nvme-type HBAs are
+  // excluded from the available pool too.
+  hba_ports_needed: number;
+  hba_ports_available: number;
 }
 
 export function deriveNode(
@@ -76,10 +87,12 @@ export function deriveNode(
     ramInstalledGb = ram.capacity_gb * node.ram_module_count;
   }
 
+  let psuRedundantCapacity = 0;
   const psu = library[node.psu_id];
   if (psu && isPsu(psu)) {
     cost += psu.price_usd * node.psu_count;
     psuCapacity = psu.wattage * node.psu_count;
+    psuRedundantCapacity = node.psu_count <= 1 ? psuCapacity : psu.wattage * (node.psu_count - 1);
   }
 
   let osdCount = 0;
@@ -89,6 +102,8 @@ export function deriveNode(
   let hddRawBytes = 0;
   let nvmeRawBytes = 0;
   let dbWalBytes = 0;
+  let hbaPortsNeeded = 0;
+  let hbaPortsAvailable = 0;
 
   for (const slot of node.drives) {
     const d = library[slot.component_id];
@@ -98,6 +113,11 @@ export function deriveNode(
     powerMax += d.watts_max * slot.count;
     totalDrives += slot.count;
     driveFF[d.form_factor] = (driveFF[d.form_factor] ?? 0) + slot.count;
+    // SAS HBAs serve HDDs and SATA SSDs. NVMe drives talk PCIe direct (or via
+    // tri-mode AICs which we don't model separately yet).
+    if (d.category === 'hdd' || d.category === 'sata_ssd') {
+      hbaPortsNeeded += slot.count;
+    }
     const bytes = d.capacity_tb * 1e12 * slot.count;
     if (slot.role === 'osd' || slot.role === 'metadata_osd') {
       osdCount += slot.count;
@@ -120,6 +140,9 @@ export function deriveNode(
     cost += c.price_usd * slot.count;
     powerTyp += c.watts_typical * slot.count;
     powerMax += c.watts_max * slot.count;
+    if (c.port_type === 'sas' || c.port_type === 'sata') {
+      hbaPortsAvailable += c.ports * slot.count;
+    }
     lanesUsed += c.pcie_lanes * slot.count;
   }
 
@@ -155,5 +178,9 @@ export function deriveNode(
     pcie_slots_available: pcieSlotsAvail,
     chassis_ru: chassisRu,
     psu_capacity_w: psuCapacity,
+    psu_redundant_capacity_w: psuRedundantCapacity,
+    psu_count: node.psu_count,
+    hba_ports_needed: hbaPortsNeeded,
+    hba_ports_available: hbaPortsAvailable,
   };
 }

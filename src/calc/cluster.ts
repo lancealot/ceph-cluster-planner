@@ -24,6 +24,11 @@ interface ClusterTotals {
   total_nvme_osd_count: number;
   total_node_count: number;
   total_host_count: number;
+  // Hosts that have at least one OSD of the named class. A tier=nvme pool
+  // with host failure-domain should be sized against the nvme host count,
+  // not the total — HDD-only hosts can't take its placement groups.
+  total_hdd_host_count: number;
+  total_nvme_host_count: number;
   total_rack_count: number;
   total_power_typical_w: number;
   total_power_max_w: number;
@@ -67,6 +72,8 @@ export function deriveCluster(
   let totalHddOsd = 0;
   let totalNvmeOsd = 0;
   let totalNodes = 0;
+  let totalHddHosts = 0;
+  let totalNvmeHosts = 0;
   let totalRacks = 0;
   let totalPowerTyp = 0;
   let totalPowerMax = 0;
@@ -92,6 +99,8 @@ export function deriveCluster(
       totalOsd += nd.osd_count * factor;
       totalHddOsd += nd.hdd_osd_count * factor;
       totalNvmeOsd += nd.nvme_osd_count * factor;
+      if (nd.hdd_osd_count > 0) totalHddHosts += factor;
+      if (nd.nvme_osd_count > 0) totalNvmeHosts += factor;
     }
   }
 
@@ -104,6 +113,8 @@ export function deriveCluster(
     total_nvme_osd_count: totalNvmeOsd,
     total_node_count: totalNodes,
     total_host_count: totalNodes,
+    total_hdd_host_count: totalHddHosts,
+    total_nvme_host_count: totalNvmeHosts,
     total_rack_count: totalRacks,
     total_power_typical_w: totalPowerTyp,
     total_power_max_w: totalPowerMax,
