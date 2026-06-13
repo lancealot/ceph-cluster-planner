@@ -17,7 +17,7 @@
     "skipLibCheck": true,
     "useDefineForClassFields": true,
     "noEmit": true,
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src"]
 }
