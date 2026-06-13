@@ -24,9 +24,9 @@ function Meter({ used, capacity, label }: { used: number; capacity: number; labe
   const hot = pct >= 90;
   return (
     <div className="wf-row">
-      <span className="lbl mono" style={{ fontSize: '10.5px', color: 'var(--text3)' }}>{label}</span>
+      <span className="lbl mono">{label}</span>
       <span />
-      <span className={'meter' + (hot ? ' warnlvl' : '')} style={{ gridColumn: '1 / -1' }}>
+      <span className={'meter full-col' + (hot ? ' warnlvl' : '')}>
         <div style={{ width: pct + '%' }} />
       </span>
     </div>
@@ -65,8 +65,8 @@ export function RackBuilder() {
           <button className="btn prime sm" type="button" onClick={startNew}>+ New rack config</button>
           <div className="panel itemlist">
             {workspace.racks.length === 0 ? (
-              <button type="button" style={{ cursor: 'default' }}>
-                <div className="t" style={{ color: 'var(--text3)', fontWeight: 400 }}>No rack configs yet</div>
+              <button type="button" className="no-click">
+                <div className="t muted">No rack configs yet</div>
                 <div className="s">Click + New to start</div>
               </button>
             ) : (
@@ -87,7 +87,7 @@ export function RackBuilder() {
 
         {!selected || !derived ? (
           <Panel>
-            <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>Select a rack or create one.</p>
+            <p className="note">Select a rack or create one.</p>
           </Panel>
         ) : (
           <div className="stack">
@@ -96,18 +96,17 @@ export function RackBuilder() {
                 <span className="microlabel">Rack name</span>
                 <input className="inp" value={selected.name} onChange={(e) => update({ name: e.target.value })} />
               </div>
-              <div className="field" style={{ width: 110 }}>
+              <div className="field w-110">
                 <span className="microlabel">RU capacity</span>
                 <input className="inp mono" type="number" min={1} value={selected.ru_capacity} onChange={(e) => update({ ru_capacity: Math.max(1, parseInt(e.target.value) || 1) })} />
               </div>
-              <div className="field" style={{ width: 110 }}>
+              <div className="field w-110">
                 <span className="microlabel">Power cap kW</span>
                 <NumericInput value={selected.power_capacity_w} scale={1000} step={0.1} decimals={1} onCommit={(w) => update({ power_capacity_w: w })} />
               </div>
               <button
-                className="btn danger"
+                className="btn danger self-end"
                 type="button"
-                style={{ alignSelf: 'flex-end' }}
                 onClick={() => {
                   deleteRack(selected.id);
                   setSelectedId(null);
@@ -137,7 +136,7 @@ export function RackBuilder() {
               </div>
 
               <div className="stack">
-                <div className="stats" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="stats c2">
                   <div className="stat"><span className="microlabel">RU used</span><div className="v">{derived.ru_used} <small>/ {selected.ru_capacity}</small></div></div>
                   <div className="stat"><span className="microlabel">Power typ</span><div className="v">{fmtKw(derived.power_typical_w)}</div></div>
                   <div className="stat"><span className="microlabel">Power max</span><div className="v">{fmtKw(derived.power_max_w)}</div></div>

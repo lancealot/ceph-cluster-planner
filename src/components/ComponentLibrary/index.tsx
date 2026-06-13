@@ -115,8 +115,8 @@ export function ComponentLibrary() {
   return (
     <div className="screen">
       <div className="screen-inner split-sidebar">
-        <div className="stack-sm" style={{ position: 'sticky', top: 0 }}>
-          <span className="microlabel" style={{ padding: '0 10px' }}>Categories</span>
+        <div className="stack-sm sticky-top">
+          <span className="microlabel cats-hd">Categories</span>
           <div className="cats">
             <button type="button" className={cat === 'all' ? 'on' : ''} onClick={() => setCat('all')}>
               <span>All</span><span className="n">{totalCount}</span>
@@ -132,11 +132,10 @@ export function ComponentLibrary() {
         <div className="stack">
           <div className="row">
             <input
-              className="inp grow"
+              className="inp grow w-search"
               placeholder="Search vendor, model, spec…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              style={{ maxWidth: '320px' }}
               aria-label="Search components"
             />
             <span className="grow" />
@@ -172,13 +171,13 @@ export function ComponentLibrary() {
                 <table className="tbl">
                   <thead>
                     <tr>
-                      <th style={{ width: '110px' }}>Vendor</th>
+                      <th className="w-110">Vendor</th>
                       <th>Model</th>
                       <th>Spec</th>
                       <th className="r">Price</th>
                       <th className="r">Typ. W</th>
                       <th>As of</th>
-                      <th className="r" style={{ width: '110px' }} />
+                      <th className="r w-110" />
                     </tr>
                   </thead>
                   <tbody>
@@ -190,11 +189,11 @@ export function ComponentLibrary() {
                       const isOverride = isBundled && isCustom;
                       return (
                         <tr key={p.id}>
-                          <td style={{ color: 'var(--text2)' }}>{p.vendor}</td>
+                          <td className="t2">{p.vendor}</td>
                           <td>
-                            <span style={{ fontWeight: 600 }}>{p.model}</span>
-                            {isCustom && !isBundled ? <span className="tag" style={{ marginLeft: 6 }}>custom</span> : null}
-                            {isOverride ? <span className="tag muted" style={{ marginLeft: 6 }}>overridden</span> : null}
+                            <span className="b6">{p.model}</span>
+                            {isCustom && !isBundled ? <span className="tag ml-6">custom</span> : null}
+                            {isOverride ? <span className="tag muted ml-6">overridden</span> : null}
                           </td>
                           <td className="spec">{describeSpec(p)}</td>
                           <td className="r price">
@@ -234,7 +233,7 @@ export function ComponentLibrary() {
                 <tbody>
                   {tombstoned.map((c) => (
                     <tr key={c.id}>
-                      <td style={{ color: 'var(--text3)' }}>{c.vendor} {c.model}</td>
+                      <td className="t3">{c.vendor} {c.model}</td>
                       <td className="spec">{categoryLabels[c.category]}</td>
                       <td className="r">
                         <button className="btn sm" type="button" onClick={() => restoreComponent(c.id)}>

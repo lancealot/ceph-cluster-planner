@@ -19,44 +19,21 @@ export function DisclaimersFooter() {
   }, [open]);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="btn"
-        style={{ border: 'none', background: 'transparent', color: 'var(--text3)', fontSize: 10.5, padding: '4px 8px' }}
-      >
+      <button type="button" onClick={() => setOpen(true)} className="btn modal-trigger">
         Disclaimers
       </button>
       {open ? (
         <>
           <div className="drawer-scrim" onClick={() => setOpen(false)} />
-          <div
-            role="dialog"
-            aria-label="Disclaimers"
-            style={{
-              position: 'fixed',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'var(--panel)',
-              border: '1px solid var(--border)',
-              borderRadius: 7,
-              boxShadow: 'var(--shadow)',
-              maxWidth: 520,
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              zIndex: 42,
-              padding: 18,
-            }}
-          >
-            <div className="row" style={{ marginBottom: 10 }}>
+          <div role="dialog" aria-label="Disclaimers" className="modal">
+            <div className="row modal-hd">
               <span className="microlabel">Disclaimers — read before procurement</span>
               <span className="grow" />
               <button className="btn sm" type="button" onClick={() => setOpen(false)}>Close</button>
             </div>
-            <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: 'var(--text2)' }}>
+            <ol className="disclaimer-list">
               {DISCLAIMERS.map((d, i) => (
-                <li key={i} style={{ marginBottom: 8, lineHeight: 1.5 }}>{d}</li>
+                <li key={i}>{d}</li>
               ))}
             </ol>
           </div>

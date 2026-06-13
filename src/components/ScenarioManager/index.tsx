@@ -61,7 +61,7 @@ function DiffTable({ result }: { result: ScenarioDiff }) {
           const cls = s.dir === 0 ? 'delta-zero' : favorable ? 'delta-pos' : unfavorable ? 'delta-neg' : 'delta-zero';
           return (
             <tr key={r.label}>
-              <td style={{ color: 'var(--text2)' }}>{r.label}</td>
+              <td className="t2">{r.label}</td>
               <td className="r price">—</td>
               <td className="r price">—</td>
               <td className={'r price ' + cls}>{s.text}</td>
@@ -69,7 +69,7 @@ function DiffTable({ result }: { result: ScenarioDiff }) {
           );
         })}
         <tr>
-          <td style={{ color: 'var(--text2)' }}>Warnings</td>
+          <td className="t2">Warnings</td>
           <td className="r price">—</td>
           <td className="r price">—</td>
           <td className="r price">
@@ -151,16 +151,15 @@ export function ScenarioManager() {
       <div className="screen-inner stack">
         <div className="row">
           <input
-            className="inp grow"
+            className="inp grow w-search"
             placeholder={`Name (default: Scenario ${scenarios.length + 1})`}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            style={{ maxWidth: 320 }}
           />
           <button className="btn prime" type="button" onClick={saveCurrent}>Save current as scenario</button>
           <button className="btn" type="button" onClick={loadBundled}>Load SC846 reference</button>
           <span className="grow" />
-          <label className="btn sm" style={{ cursor: 'pointer' }}>
+          <label className="btn sm clickable">
             Import JSON
             <input
               ref={fileRef}
@@ -170,7 +169,7 @@ export function ScenarioManager() {
                 const f = e.target.files?.[0];
                 if (f) importFromFile(f);
               }}
-              style={{ display: 'none' }}
+              className="is-hidden"
             />
           </label>
           <button className="btn sm" type="button" onClick={exportCurrent}>Export JSON</button>
@@ -190,7 +189,7 @@ export function ScenarioManager() {
         <div className="scen-grid">
           {scenarios.length === 0 ? (
             <Panel>
-              <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>
+              <p className="note">
                 No saved scenarios yet. Build a workspace and click <b>Save current</b>, or load the bundled SC846 reference.
               </p>
             </Panel>
@@ -206,10 +205,9 @@ export function ScenarioManager() {
                   <div>
                     <div className="row">
                       <input
-                        className="inp"
+                        className="inp name-input"
                         value={s.name}
                         onChange={(e) => rename(s.id, e.target.value)}
-                        style={{ flex: 1, fontWeight: 600, fontSize: 13, padding: '4px 8px' }}
                       />
                       {isCurrent ? <span className="tag">loaded</span> : null}
                     </div>
@@ -240,12 +238,12 @@ export function ScenarioManager() {
           title="Diff — A vs B"
           right={
             <div className="row">
-              <select className="sel" style={{ width: 'auto', padding: '4px 8px', fontSize: 11.5 }} value={baseId} onChange={(e) => setBaseId(e.target.value)}>
+              <select className="sel sel-sm" value={baseId} onChange={(e) => setBaseId(e.target.value)}>
                 <option value="">— A —</option>
                 {scenarios.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
               </select>
               <span className="counts">vs</span>
-              <select className="sel" style={{ width: 'auto', padding: '4px 8px', fontSize: 11.5 }} value={compareId} onChange={(e) => setCompareId(e.target.value)}>
+              <select className="sel sel-sm" value={compareId} onChange={(e) => setCompareId(e.target.value)}>
                 <option value="">— B —</option>
                 {scenarios.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
               </select>
@@ -256,7 +254,7 @@ export function ScenarioManager() {
           {diffResult ? (
             <DiffTable result={diffResult} />
           ) : (
-            <p style={{ padding: 14, color: 'var(--text3)', fontSize: 12.5 }}>Pick two different scenarios to see deltas.</p>
+            <p className="note p-14">Pick two different scenarios to see deltas.</p>
           )}
         </Panel>
       </div>

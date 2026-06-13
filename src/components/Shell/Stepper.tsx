@@ -100,7 +100,7 @@ export function Stepper({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void })
   return (
     <nav className="stepper" aria-label="Build pipeline">
       {stages.map((s, i) => (
-        <span key={s.id} style={{ display: 'contents' }}>
+        <span key={s.id} className="contents">
           {i > 0 ? <span className="step-sep" aria-hidden>›</span> : null}
           <button
             type="button"

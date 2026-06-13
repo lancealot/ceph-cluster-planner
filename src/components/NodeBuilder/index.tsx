@@ -107,15 +107,13 @@ export function NodeBuilder() {
             <button className="btn prime sm grow" type="button" onClick={startNew}>+ New node</button>
             <button className="btn sm" type="button" onClick={() => loadFixture('hdd')}>SC846 ref</button>
           </div>
-          <button className="btn sm" type="button" onClick={() => loadFixture('meta')} style={{ width: '100%' }}>
+          <button className="btn sm w-full" type="button" onClick={() => loadFixture('meta')}>
             + metadata variant
           </button>
           <div className="panel itemlist">
             {workspace.nodes.length === 0 ? (
-              <button type="button" style={{ cursor: 'default' }}>
-                <div className="t" style={{ color: 'var(--text3)', fontWeight: 400 }}>
-                  No node configs yet
-                </div>
+              <button type="button" className="no-click">
+                <div className="t muted">No node configs yet</div>
                 <div className="s">Click + New or load a reference</div>
               </button>
             ) : (
@@ -131,7 +129,7 @@ export function NodeBuilder() {
 
         {!selected || !derived ? (
           <Panel>
-            <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>Select a node on the left, or create one.</p>
+            <p className="note">Select a node on the left, or create one.</p>
           </Panel>
         ) : (
           <div className="stack">
@@ -140,14 +138,13 @@ export function NodeBuilder() {
                 <span className="microlabel">Name</span>
                 <input className="inp" value={selected.name} onChange={(e) => update({ name: e.target.value })} />
               </div>
-              <div className="field" style={{ width: 130 }}>
+              <div className="field w-130">
                 <span className="microlabel">Role tag</span>
                 <input className="inp mono" value={selected.role ?? ''} onChange={(e) => update({ role: e.target.value || undefined })} placeholder="e.g. osd" />
               </div>
               <button
-                className="btn danger"
+                className="btn danger self-end"
                 type="button"
-                style={{ alignSelf: 'flex-end' }}
                 onClick={() => {
                   deleteNode(selected.id);
                   setSelectedId(null);
@@ -187,7 +184,7 @@ export function NodeBuilder() {
                         <CategorySelect library={library} category="cpu" value={selected.cpu_id} onChange={(id) => update({ cpu_id: id })} />
                       </Field>
                     </div>
-                    <div style={{ width: 76 }}>
+                    <div className="w-76">
                       <Field label="Sockets">
                         <input className="inp mono" type="number" min={1} value={selected.cpu_count} onChange={(e) => update({ cpu_count: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </Field>
@@ -199,7 +196,7 @@ export function NodeBuilder() {
                         <CategorySelect library={library} category="ram" value={selected.ram_module_id} onChange={(id) => update({ ram_module_id: id })} />
                       </Field>
                     </div>
-                    <div style={{ width: 76 }}>
+                    <div className="w-76">
                       <Field label="Count">
                         <input className="inp mono" type="number" min={0} value={selected.ram_module_count} onChange={(e) => update({ ram_module_count: Math.max(0, parseInt(e.target.value) || 0) })} />
                       </Field>
@@ -211,7 +208,7 @@ export function NodeBuilder() {
                         <CategorySelect library={library} category="psu" value={selected.psu_id} onChange={(id) => update({ psu_id: id })} />
                       </Field>
                     </div>
-                    <div style={{ width: 76 }}>
+                    <div className="w-76">
                       <Field label="Count">
                         <input className="inp mono" type="number" min={1} value={selected.psu_count} onChange={(e) => update({ psu_count: Math.max(1, parseInt(e.target.value) || 1) })} />
                       </Field>
@@ -282,7 +279,7 @@ export function NodeBuilder() {
               <Panel
                 title="Expansion cards"
                 right={
-                  <div className="row" style={{ gap: 4 }}>
+                  <div className="row gap-4">
                     <button className="btn link sm" type="button" onClick={() => update({ hbas: [...selected.hbas, { component_id: '', count: 1 }] })}>+ HBA</button>
                     <button className="btn link sm" type="button" onClick={() => update({ nics: [...selected.nics, { component_id: '', count: 1 }] })}>+ NIC</button>
                   </div>
