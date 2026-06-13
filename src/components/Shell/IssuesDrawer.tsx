@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAllIssues } from '../../state/useAllIssues';
 import type { ValidationSeverity } from '../../types/scenario';
 import { SevDot } from './primitives';
@@ -9,14 +9,41 @@ const FILTERS: Filter[] = ['all', 'error', 'warning', 'info'];
 export function IssuesDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [filter, setFilter] = useState<Filter>('all');
   const issues = useAllIssues();
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const lastFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    lastFocus.current = document.activeElement as HTMLElement | null;
+    // Initial focus: Close button so Tab cycles into the drawer's controls.
+    const closeBtn = drawerRef.current?.querySelector<HTMLButtonElement>('[data-drawer-close]');
+    closeBtn?.focus();
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      // Focus trap: keep Tab/Shift+Tab inside the drawer.
+      if (e.key !== 'Tab' || !drawerRef.current) return;
+      const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      lastFocus.current?.focus?.();
+    };
   }, [open, onClose]);
 
   const filtered = useMemo(
@@ -35,7 +62,7 @@ export function IssuesDrawer({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <div>
       <div className="drawer-scrim" onClick={onClose} />
-      <div className="drawer" role="dialog" aria-label="Validation issues">
+      <div className="drawer" role="dialog" aria-label="Validation issues" aria-modal="true" ref={drawerRef}>
         <div className="drawer-hd">
           <span className="microlabel">
             Validation — {issues.length} total ({counts.error} errors · {counts.warning} warnings · {counts.info} info)
@@ -63,7 +90,7 @@ export function IssuesDrawer({ open, onClose }: { open: boolean; onClose: () => 
               </button>
             ))}
           </div>
-          <button className="btn sm" type="button" onClick={onClose}>
+          <button className="btn sm" type="button" onClick={onClose} data-drawer-close>
             Close
           </button>
         </div>

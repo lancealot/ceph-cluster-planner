@@ -404,9 +404,19 @@ input[type="range"] { accent-color: var(--accent); width: 100%; }
 .railbar .kv-inline { display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
 .railbar .kv-inline .v { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+/* Two-column screen layouts (sidebar + main, list + editor, etc.).
+   Inline-style grids overrode media queries — these classes stack at the
+   same breakpoint where the rail collapses. */
+.split-sidebar { display: grid; grid-template-columns: 190px 1fr; gap: 18px; align-items: start; }
+.split-listed { display: grid; grid-template-columns: 230px 1fr; gap: 18px; align-items: start; }
+.split-rack { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start; }
+
 @media (max-width: 980px) {
   .workarea { grid-template-columns: 1fr; }
   .rail { display: none; }
   .railbar { display: flex; }
+  .split-sidebar,
+  .split-listed,
+  .split-rack { grid-template-columns: 1fr; }
 }
 

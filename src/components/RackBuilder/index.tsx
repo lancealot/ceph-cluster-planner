@@ -5,6 +5,7 @@ import type { RackConfig } from '../../types/rack';
 import { deriveRack, validateRack } from '../../calc/rack';
 import { format_bytes as fmtCap, format_usd as fmtUsd, format_power_kw as fmtKw } from '../../calc/units';
 import { Panel } from '../Shell/primitives';
+import { NumericInput } from '../Shell/NumericInput';
 import { RackElevation } from './RackElevation';
 import { WarningsList } from '../Common/WarningsList';
 
@@ -59,7 +60,7 @@ export function RackBuilder() {
 
   return (
     <div className="screen">
-      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 18, alignItems: 'start' }}>
+      <div className="screen-inner split-listed">
         <div className="stack-sm">
           <button className="btn prime sm" type="button" onClick={startNew}>+ New rack config</button>
           <div className="panel itemlist">
@@ -101,7 +102,7 @@ export function RackBuilder() {
               </div>
               <div className="field" style={{ width: 110 }}>
                 <span className="microlabel">Power cap kW</span>
-                <input className="inp mono" type="number" min={0} step={0.1} value={(selected.power_capacity_w / 1000).toFixed(1)} onChange={(e) => update({ power_capacity_w: Math.max(0, (parseFloat(e.target.value) || 0) * 1000) })} />
+                <NumericInput value={selected.power_capacity_w} scale={1000} step={0.1} decimals={1} onCommit={(w) => update({ power_capacity_w: w })} />
               </div>
               <button
                 className="btn danger"
@@ -129,7 +130,7 @@ export function RackBuilder() {
               </div>
             ) : null}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, alignItems: 'start' }}>
+            <div className="split-rack">
               <div className="stack-sm">
                 <span className="microlabel">Elevation — {selected.ru_capacity}U</span>
                 <RackElevation rack={selected} nodeMap={nodeMap} library={library} />

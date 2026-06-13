@@ -107,9 +107,19 @@ function loadInitial(): Workspace {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyWorkspace();
-    const parsed = JSON.parse(raw) as Workspace;
+    const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return emptyWorkspace();
-    return { ...emptyWorkspace(), ...parsed };
+    // Deep-merge nested defaults so older saved workspaces missing later-added
+    // keys (e.g. lanes_per_slot inside cluster.defaults) don't surface as NaN.
+    const base = emptyWorkspace();
+    const ws: Workspace = { ...base, ...parsed };
+    ws.cluster = { ...base.cluster, ...(parsed.cluster ?? {}) };
+    ws.cluster.defaults = { ...base.cluster.defaults, ...(parsed.cluster?.defaults ?? {}) };
+    ws.nodes = Array.isArray(ws.nodes) ? ws.nodes : [];
+    ws.racks = Array.isArray(ws.racks) ? ws.racks : [];
+    ws.custom_components = Array.isArray(ws.custom_components) ? ws.custom_components : [];
+    ws.deleted_component_ids = Array.isArray(ws.deleted_component_ids) ? ws.deleted_component_ids : [];
+    return ws;
   } catch {
     return emptyWorkspace();
   }
