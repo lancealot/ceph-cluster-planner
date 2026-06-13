@@ -10,26 +10,33 @@ export function validatePool(
   const issues: ValidationIssue[] = [];
   const { effective_size } = poolEfficiency(pool);
 
+  // 'nvme' and 'ssd' both name the flash bucket — deriveNode classifies every
+  // non-HDD storage drive into nvme_osd_count, so 'ssd' counts the same OSDs
+  // and rawForTier in cluster.ts does the same.
   let domainCount = 0;
   switch (pool.failure_domain) {
     case 'host':
-      domainCount = derived.total_host_count;
+      // Only hosts that contribute OSDs of this pool's tier can take its PGs.
+      domainCount = !pool.target_tier
+        ? derived.total_host_count
+        : pool.target_tier === 'hdd'
+        ? derived.total_hdd_host_count
+        : derived.total_nvme_host_count;
       break;
     case 'rack':
       domainCount = derived.total_rack_count;
       break;
     case 'osd':
-      // 'nvme' and 'ssd' both name the flash bucket — deriveNode classifies
-      // every non-HDD storage drive into nvme_osd_count, so 'ssd' counts the
-      // same OSDs and rawForTier in cluster.ts does the same.
-      domainCount =
-        pool.target_tier === 'hdd'
-          ? derived.total_hdd_osd_count
-          : pool.target_tier === 'nvme' || pool.target_tier === 'ssd'
-          ? derived.total_nvme_osd_count
-          : derived.total_osd_count;
+      domainCount = !pool.target_tier
+        ? derived.total_osd_count
+        : pool.target_tier === 'hdd'
+        ? derived.total_hdd_osd_count
+        : derived.total_nvme_osd_count;
       break;
     case 'datacenter':
+      // Datacenter grouping isn't modeled yet — every cluster is treated as
+      // one DC. The dropdown no longer offers this; back-compat for older
+      // scenarios surfaces the failure as the count being 1.
       domainCount = 1;
       break;
   }

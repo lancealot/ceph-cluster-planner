@@ -11,7 +11,9 @@ import { WarningsList } from '../Common/WarningsList';
 import type { ClusterConfig, FailureDomain, PoolConfig, PoolType, DeviceTier } from '../../types/cluster';
 
 const POOL_TYPES: PoolType[] = ['replicated', 'ec'];
-const FAILURE_DOMAINS: FailureDomain[] = ['osd', 'host', 'rack', 'datacenter'];
+// 'datacenter' stays in the schema for back-compat but isn't offered as a
+// choice — DC grouping above the rack level isn't modeled yet.
+const FAILURE_DOMAINS: FailureDomain[] = ['osd', 'host', 'rack'];
 // 'ssd' is accepted by the schema for backward-compat and treated identically
 // to 'nvme' (deriveNode lumps every non-HDD drive into the flash bucket); only
 // these two are offered going forward.
