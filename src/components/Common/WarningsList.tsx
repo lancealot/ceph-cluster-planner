@@ -10,21 +10,19 @@ export function WarningsList({
 }) {
   if (issues.length === 0) {
     return (
-      <div className="row" style={{ gap: 8 }}>
+      <div className="row">
         <span className="dot ok" />
-        <span style={{ fontSize: '12.5px', color: 'var(--text2)' }}>{empty}</span>
+        <span className="note2">{empty}</span>
       </div>
     );
   }
   return (
     <div className="stack-sm">
       {issues.map((i, idx) => (
-        <div className="row" key={`${i.code}-${idx}`} style={{ gap: 10, alignItems: 'baseline' }}>
+        <div className="wl-row" key={`${i.code}-${idx}`}>
           <SevDot sev={i.severity} />
-          <span className="mono" style={{ fontSize: '10.5px', color: 'var(--text3)', minWidth: 200 }}>
-            {i.code}
-          </span>
-          <span style={{ fontSize: '12.5px', color: 'var(--text2)' }}>{i.message}</span>
+          <span className="wl-code">{i.code}</span>
+          <span className="note2">{i.message}</span>
         </div>
       ))}
     </div>

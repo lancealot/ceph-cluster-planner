@@ -71,22 +71,10 @@ export function BayMap({ node, library }: { node: NodeConfig; library: Component
       {row('Rear', 'sff', sffCols)}
       {row('NVMe', 'nvme', nvmeCols)}
       <div className="legend">
-        <span className="li">
-          <span className="sw" style={{ background: 'color-mix(in oklab, var(--role-osd) 22%, var(--panel))', borderColor: 'var(--role-osd)' }} />
-          osd
-        </span>
-        <span className="li">
-          <span className="sw" style={{ background: 'color-mix(in oklab, var(--role-db) 22%, var(--panel))', borderColor: 'var(--role-db)' }} />
-          db_wal
-        </span>
-        <span className="li">
-          <span className="sw" style={{ background: 'color-mix(in oklab, var(--role-meta) 22%, var(--panel))', borderColor: 'var(--role-meta)' }} />
-          metadata_osd
-        </span>
-        <span className="li">
-          <span className="sw" style={{ background: 'var(--panel2)' }} />
-          empty
-        </span>
+        <span className="li"><span className="sw osd" />osd</span>
+        <span className="li"><span className="sw db" />db_wal</span>
+        <span className="li"><span className="sw meta" />metadata_osd</span>
+        <span className="li"><span className="sw empty" />empty</span>
       </div>
     </div>
   );

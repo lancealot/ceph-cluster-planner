@@ -29,16 +29,7 @@ export function EditablePrice({ value, onSave, modified }: Props) {
           setDraft(value);
           setEditing(true);
         }}
-        className="btn"
-        style={{
-          padding: '2px 6px',
-          minHeight: 0,
-          color: modified ? 'var(--accent)' : 'var(--text)',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontVariantNumeric: 'tabular-nums',
-          background: 'transparent',
-          border: '1px solid transparent',
-        }}
+        className={'btn price-edit' + (modified ? ' modified' : '')}
         title={modified ? 'Overrides the bundled price' : 'Click to edit'}
       >
         {fmtUsd(value)}
@@ -50,7 +41,7 @@ export function EditablePrice({ value, onSave, modified }: Props) {
   return (
     <input
       ref={inputRef}
-      className="inp mono"
+      className="inp mono price-input"
       type="number"
       min={0}
       step={0.01}
@@ -61,7 +52,6 @@ export function EditablePrice({ value, onSave, modified }: Props) {
         if (e.key === 'Enter') commit();
         else if (e.key === 'Escape') setEditing(false);
       }}
-      style={{ width: '110px', textAlign: 'right', padding: '4px 8px' }}
     />
   );
 }

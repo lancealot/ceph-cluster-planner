@@ -26,7 +26,7 @@ function Shell() {
       <Stepper tab={tab} setTab={setTab} />
       <SummaryStrip openDrawer={openDrawer} />
       <div className="workarea">
-        <main style={{ overflowY: 'auto', minHeight: 0 }}>
+        <main className="workmain">
           {tab === 'components' && <ComponentLibrary />}
           {tab === 'nodes' && <NodeBuilder />}
           {tab === 'racks' && <RackBuilder />}

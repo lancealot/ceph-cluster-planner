@@ -2,7 +2,7 @@ import type { WaterfallStage } from '../../state/useClusterOutputs';
 
 export function BigWaterfall({ rows }: { rows: WaterfallStage[] }) {
   if (rows.length === 0) {
-    return <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>Add a pool to see the capacity cascade.</p>;
+    return <p className="note">Add a pool to see the capacity cascade.</p>;
   }
   const max = rows[0].tb;
   return (
@@ -11,7 +11,7 @@ export function BigWaterfall({ rows }: { rows: WaterfallStage[] }) {
         <div className="wfb-row" key={r.label}>
           <div className="wfb-lbl">
             <span className="microlabel">{r.label}</span>
-            {r.note ? <span style={{ fontSize: 12, color: 'var(--text3)' }}>{r.note}</span> : null}
+            {r.note ? <span className="t3">{r.note}</span> : null}
           </div>
           <div className="wfb-track">
             <div

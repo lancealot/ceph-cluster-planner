@@ -44,9 +44,9 @@ function defaultFor(category: ComponentCategory): Component {
   }
 }
 
-function Lbl({ label, children, span = 1 }: { label: string; children: ReactNode; span?: number }) {
+function Lbl({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="field" style={{ gridColumn: `span ${span}` }}>
+    <label className="field">
       <span className="microlabel">{label}</span>
       {children}
     </label>
@@ -83,7 +83,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
   return (
     <Panel title={initial ? 'Edit custom component' : 'Add custom component'}>
       <form onSubmit={submit} className="stack-sm">
-        <div className="cols" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div className="cols grid-4">
           <Lbl label="Category">
             <select className="sel" value={draft.category} onChange={(e) => changeCategory(e.target.value as ComponentCategory)} disabled={!!initial}>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -113,7 +113,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         </div>
 
         {draft.category === 'chassis' ? (
-          <div className="cols" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+          <div className="cols grid-6">
             <Lbl label="RU"><input className="inp mono" type="number" min={1} max={20} value={num(d.ru)} onChange={(e) => patchAny('ru', Math.max(1, parseInt(e.target.value) || 1))} /></Lbl>
             <Lbl label="LFF bays"><input className="inp mono" type="number" min={0} value={num(d.drive_bays_lff)} onChange={(e) => patchAny('drive_bays_lff', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
             <Lbl label="SFF bays"><input className="inp mono" type="number" min={0} value={num(d.drive_bays_sff)} onChange={(e) => patchAny('drive_bays_sff', Math.max(0, parseInt(e.target.value) || 0))} /></Lbl>
@@ -124,7 +124,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         ) : null}
 
         {draft.category === 'hdd' || draft.category === 'nvme_ssd' || draft.category === 'sata_ssd' ? (
-          <div className="cols" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="cols grid-3">
             <Lbl label="Capacity (TB)"><input className="inp mono" type="number" step={0.01} min={0} value={num(d.capacity_tb)} onChange={(e) => patchAny('capacity_tb', parseFloat(e.target.value) || 0)} /></Lbl>
             <Lbl label="Form factor"><input className="inp mono" value={str(d.form_factor)} onChange={(e) => patchAny('form_factor', e.target.value)} /></Lbl>
             <Lbl label="Interface"><input className="inp mono" value={str(d.interface)} onChange={(e) => patchAny('interface', e.target.value)} /></Lbl>
@@ -132,7 +132,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         ) : null}
 
         {draft.category === 'cpu' ? (
-          <div className="cols" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          <div className="cols grid-5">
             <Lbl label="Cores"><input className="inp mono" type="number" min={0} value={num(d.cores)} onChange={(e) => patchAny('cores', parseInt(e.target.value) || 0)} /></Lbl>
             <Lbl label="Threads"><input className="inp mono" type="number" min={0} value={num(d.threads)} onChange={(e) => patchAny('threads', parseInt(e.target.value) || 0)} /></Lbl>
             <Lbl label="Base clock (GHz)"><input className="inp mono" type="number" step={0.1} min={0} value={num(d.base_clock_ghz)} onChange={(e) => patchAny('base_clock_ghz', parseFloat(e.target.value) || 0)} /></Lbl>
@@ -149,7 +149,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         ) : null}
 
         {draft.category === 'hba' || draft.category === 'nic' ? (
-          <div className="cols" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <div className="cols grid-4">
             <Lbl label="Ports"><input className="inp mono" type="number" min={0} value={num(d.ports)} onChange={(e) => patchAny('ports', parseInt(e.target.value) || 0)} /></Lbl>
             {draft.category === 'hba' ? (
               <Lbl label="Port type">
@@ -188,7 +188,7 @@ export function CustomComponentForm({ initial, onSubmit, onCancel }: Props) {
         <div className="row">
           <button type="submit" className="btn prime">{initial ? 'Save' : 'Add'}</button>
           {onCancel ? <button type="button" className="btn" onClick={onCancel}>Cancel</button> : null}
-          <span className="counts" style={{ marginLeft: 'auto' }}>Drive RPM and SSD endurance can be tuned via the exported JSON.</span>
+          <span className="counts ml-auto">Drive RPM and SSD endurance can be tuned via the exported JSON.</span>
         </div>
       </form>
     </Panel>

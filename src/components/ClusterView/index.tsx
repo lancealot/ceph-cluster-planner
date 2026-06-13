@@ -93,7 +93,7 @@ export function ClusterView() {
     <div className="screen">
       <div className="screen-inner stack">
         <div className="row">
-          <div className="field" style={{ width: 300 }}>
+          <div className="field w-300">
             <span className="microlabel">Cluster name</span>
             <input className="inp" value={cluster.name} onChange={(e) => updateCluster({ ...cluster, name: e.target.value })} />
           </div>
@@ -107,7 +107,7 @@ export function ClusterView() {
 
         <div className="cols c2">
           <Panel title="Cluster defaults">
-            <div className="cols c2" style={{ gap: 10 }}>
+            <div className="cols c2 gap-10">
               <Field label="nearfull_ratio">
                 <input className="inp mono" type="number" step={0.01} min={0} max={1} value={cluster.defaults.nearfull_ratio} onChange={(e) => updateDefaults({ nearfull_ratio: parseFloat(e.target.value) || 0 })} />
               </Field>
@@ -132,7 +132,7 @@ export function ClusterView() {
                   const slot = cluster.racks.find((s) => s.rack_config_id === r.id);
                   return (
                     <div className="slotrow card" key={r.id}>
-                      <span style={{ fontSize: 12.5, fontWeight: 600 }}>{r.name}</span>
+                      <span className="slot-name">{r.name}</span>
                       <input className="inp mono" type="number" min={0} value={slot?.count ?? 0} onChange={(e) => setRackCount(r.id, parseInt(e.target.value) || 0)} />
                       <span className="counts">×</span>
                     </div>
@@ -153,7 +153,7 @@ export function ClusterView() {
           right={<button className="btn prime sm" type="button" onClick={addPool}>+ Add pool</button>}
         >
           {cluster.pools.length === 0 ? (
-            <p style={{ color: 'var(--text3)', fontSize: 12.5 }}>No pools defined yet.</p>
+            <p className="note">No pools defined yet.</p>
           ) : (
             <div className="stack-sm">
               {cluster.pools.map((pool, idx) => {
@@ -163,10 +163,9 @@ export function ClusterView() {
                   <div className="poolcard" key={pool.id}>
                     <div className="pool-hd">
                       <input
-                        className="inp mono"
+                        className="inp mono name-input"
                         value={pool.name}
                         onChange={(e) => updatePool(idx, { name: e.target.value })}
-                        style={{ flex: 1, fontSize: 13, fontWeight: 600, padding: '4px 8px' }}
                       />
                       <span className="tag">
                         {pool.type === 'ec' ? `EC ${pool.k ?? 8}+${pool.m ?? 3}` : `×${pool.replicas ?? 3} replica`}
@@ -178,8 +177,8 @@ export function ClusterView() {
                       </span>
                       <button className="btn sm danger" type="button" onClick={() => removePool(idx)}>Remove</button>
                     </div>
-                    <div className="row" style={{ gap: 14, flexWrap: 'wrap' }}>
-                      <div style={{ width: 110 }}>
+                    <div className="row wrap gap-14">
+                      <div className="w-110">
                         <Field label="Type">
                           <select
                             className="sel"
@@ -200,32 +199,32 @@ export function ClusterView() {
                       </div>
                       {pool.type === 'ec' ? (
                         <>
-                          <div style={{ width: 90 }}>
+                          <div className="w-90">
                             <Field label="k">
                               <input className="inp mono" type="number" min={1} value={pool.k ?? 8} onChange={(e) => updatePool(idx, { k: parseInt(e.target.value) || 1 })} />
                             </Field>
                           </div>
-                          <div style={{ width: 90 }}>
+                          <div className="w-90">
                             <Field label="m">
                               <input className="inp mono" type="number" min={1} value={pool.m ?? 3} onChange={(e) => updatePool(idx, { m: parseInt(e.target.value) || 1 })} />
                             </Field>
                           </div>
                         </>
                       ) : (
-                        <div style={{ width: 110 }}>
+                        <div className="w-110">
                           <Field label="replicas">
                             <input className="inp mono" type="number" min={1} value={pool.replicas ?? 3} onChange={(e) => updatePool(idx, { replicas: parseInt(e.target.value) || 1 })} />
                           </Field>
                         </div>
                       )}
-                      <div style={{ width: 130 }}>
+                      <div className="w-130">
                         <Field label="Failure domain">
                           <select className="sel" value={pool.failure_domain} onChange={(e) => updatePool(idx, { failure_domain: e.target.value as FailureDomain })}>
                             {FAILURE_DOMAINS.map((d) => (<option key={d} value={d}>{d}</option>))}
                           </select>
                         </Field>
                       </div>
-                      <div style={{ width: 110 }}>
+                      <div className="w-110">
                         <Field label="Tier">
                           <select
                             className="sel"
@@ -237,7 +236,7 @@ export function ClusterView() {
                           </select>
                         </Field>
                       </div>
-                      <div className="grow" style={{ minWidth: 200 }}>
+                      <div className="grow min-w-200">
                         <Field label={`capacity share — ${(pool.capacity_share * 100).toFixed(1)}%`}>
                           <input type="range" min={0} max={1} step={0.01} value={pool.capacity_share} onChange={(e) => updatePool(idx, { capacity_share: parseFloat(e.target.value) })} />
                         </Field>

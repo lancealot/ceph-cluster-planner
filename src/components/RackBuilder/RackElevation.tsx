@@ -39,7 +39,7 @@ export function RackElevation({
         <div className="elev-u" key={i} style={{ height: s.u * U_PX + 'px' }}>
           <div className={'elev-block ' + s.type}>
             <span>{s.label}</span>
-            <span style={{ color: 'var(--text3)' }}>{s.u}U</span>
+            <span className="t3">{s.u}U</span>
           </div>
         </div>
       ))}

@@ -88,18 +88,18 @@ export function Header() {
         </span>
       </div>
       <div className="hdr-actions">
-        {flash ? <span className="counts" style={{ marginRight: 8 }}>{flash}</span> : null}
+        {flash ? <span className="counts">{flash}</span> : null}
         <button className="btn sm" type="button" onClick={copyShareLink} title="Copy URL with workspace encoded">
           Share link
         </button>
-        <label className="btn sm" style={{ cursor: 'pointer' }}>
+        <label className="btn sm clickable">
           Import
           <input
             ref={fileRef}
             type="file"
             accept="application/json"
             onChange={importWorkspace}
-            style={{ display: 'none' }}
+            className="is-hidden"
           />
         </label>
         <button className="btn sm" type="button" onClick={exportWorkspace}>

@@ -13,7 +13,7 @@ function MiniWaterfall({ rows }: { rows: WaterfallStage[] }) {
           <span className="wf-track">
             <span
               className={'wf-fill' + (i === rows.length - 1 ? ' final' : '')}
-              style={{ width: `${max > 0 ? (r.tb / max) * 100 : 0}%`, display: 'block' }}
+              style={{ width: `${max > 0 ? (r.tb / max) * 100 : 0}%` }}
             />
           </span>
         </div>
