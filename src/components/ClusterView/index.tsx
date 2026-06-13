@@ -5,6 +5,7 @@ import { useClusterOutputs } from '../../state/useClusterOutputs';
 import { deriveCluster, poolEfficiency } from '../../calc/cluster';
 import { validateCluster, validatePool } from '../../calc/clusterValidation';
 import { deriveRack } from '../../calc/rack';
+import { format_bytes as fmtCap } from '../../calc/units';
 import { Panel, Field } from '../Shell/primitives';
 import { BigWaterfall } from './BigWaterfall';
 import { WarningsList } from '../Common/WarningsList';
@@ -30,13 +31,6 @@ function newPool(): PoolConfig {
     capacity_share: 1,
     target_tier: 'hdd',
   };
-}
-
-function fmtCap(bytes: number): string {
-  const tb = bytes / 1e12;
-  if (tb >= 1000) return `${(tb / 1000).toFixed(2)} PB`;
-  if (tb >= 1) return `${tb.toFixed(2)} TB`;
-  return `${(tb * 1000).toFixed(0)} GB`;
 }
 
 export function ClusterView() {

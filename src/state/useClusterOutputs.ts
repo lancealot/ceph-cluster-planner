@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useWorkspace } from './workspace';
 import { useLibrary } from './useLibrary';
 import { deriveCluster } from '../calc/cluster';
+import { format_power, format_usd } from '../calc/units';
 
 export interface WaterfallStage {
   label: string;
@@ -38,17 +39,6 @@ function fmtCapacity(bytes: number): { val: string; unit: string } {
 function fmtCapStr(bytes: number): string {
   const { val, unit } = fmtCapacity(bytes);
   return `${val} ${unit}`;
-}
-
-function fmtCost(usd: number): string {
-  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(2)}M`;
-  if (usd >= 1000) return `$${(usd / 1000).toFixed(1)}k`;
-  return `$${usd.toFixed(0)}`;
-}
-
-function fmtPower(w: number): string {
-  if (w >= 1000) return `${(w / 1000).toFixed(2)} kW`;
-  return `${Math.round(w)} W`;
 }
 
 export function useClusterOutputs(): ClusterOutputs {
@@ -106,9 +96,9 @@ export function useClusterOutputs(): ClusterOutputs {
       usable,
       usableUnit,
       raw: fmtCapStr(d.total_raw_bytes),
-      cost: fmtCost(d.total_cost_usd),
-      perTB: usableTb > 0 ? fmtCost(perTb) : '—',
-      power: fmtPower(d.total_power_typical_w),
+      cost: format_usd(d.total_cost_usd),
+      perTB: usableTb > 0 ? format_usd(perTb) : '—',
+      power: format_power(d.total_power_typical_w),
       counts,
       waterfall,
       hasPool: cluster.pools.length > 0,

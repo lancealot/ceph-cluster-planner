@@ -1,1 +1,2 @@
-import '@testing-library/jest-dom/vitest';
+// Vitest setup. Reserved for future global test wiring; intentionally empty.
+export {};

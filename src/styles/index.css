@@ -1,8 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* All styles live in planner.css (loaded next from main.tsx).
+   This file used to host @tailwind directives; Tailwind was dropped
+   when the planner.css token system replaced every utility class. */
 
-/* Print: hide chrome (header, stepper, rail, strip, drawer); keep main content readable on white. */
 @media print {
   .hdr,
   .stepper,
