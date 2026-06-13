@@ -9,6 +9,13 @@ const NVME_FORM_FACTORS = ['m.2', 'u.2', 'u.3', 'e1.s'] as const;
 
 export const CORES_PER_OSD_NVME_THRESHOLD = 2;
 export const CORES_PER_OSD_HDD_THRESHOLD = 0.5;
+// Network bandwidth thresholds (ratio of network_bandwidth_gbps to
+// osd_throughput_gbps). At 1.0× the network can in principle saturate every
+// disk; below that you are network-bound. The error tier flags grossly
+// under-provisioned designs that cannot serve a single replicated write at
+// full speed without saturating the link.
+export const NETWORK_WARN_RATIO = 1.0;
+export const NETWORK_ERROR_RATIO = 0.5;
 export const DB_WAL_RATIO_LOW = 0.01;
 export const DB_WAL_RATIO_HIGH = 0.04;
 
@@ -143,6 +150,37 @@ export function validateNode(
       scope: 'node',
       ref_id: node.id,
       message: `${d.hba_ports_needed} SAS/SATA drives but only ${d.hba_ports_available} HBA ports available`,
+    });
+  }
+
+  // Network bandwidth vs aggregate OSD throughput. Only meaningful once both
+  // OSDs and NICs are present — a fresh node with neither shouldn't warn.
+  if (d.osd_throughput_gbps > 0 && d.network_bandwidth_gbps > 0) {
+    const ratio = d.network_bandwidth_gbps / d.osd_throughput_gbps;
+    if (ratio < NETWORK_ERROR_RATIO) {
+      issues.push({
+        severity: 'error',
+        code: 'node.network_under_osd_throughput',
+        scope: 'node',
+        ref_id: node.id,
+        message: `Network ${d.network_bandwidth_gbps} Gb/s is ${(ratio * 100).toFixed(0)}% of aggregate OSD throughput ${Math.round(d.osd_throughput_gbps)} Gb/s — grossly under-provisioned`,
+      });
+    } else if (ratio < NETWORK_WARN_RATIO) {
+      issues.push({
+        severity: 'warning',
+        code: 'node.network_under_osd_throughput',
+        scope: 'node',
+        ref_id: node.id,
+        message: `Network ${d.network_bandwidth_gbps} Gb/s can't saturate aggregate OSD throughput ${Math.round(d.osd_throughput_gbps)} Gb/s (${(ratio * 100).toFixed(0)}%)`,
+      });
+    }
+  } else if (d.osd_count > 0 && d.network_bandwidth_gbps === 0) {
+    issues.push({
+      severity: 'error',
+      code: 'node.no_network',
+      scope: 'node',
+      ref_id: node.id,
+      message: `${d.osd_count} OSDs but no NIC configured`,
     });
   }
 

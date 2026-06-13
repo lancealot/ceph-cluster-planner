@@ -11,6 +11,15 @@ import {
   isStorageDrive,
 } from '../types/components';
 
+// Conservative sustained per-OSD throughput, Gb/s. HDDs are paced by mechanical
+// seek; SATA SSDs by the 6 Gb/s SATA link; NVMe by a single PCIe 3.0 ×4 lane's
+// worth of headroom (newer gens scale up but the validation only cares about
+// "can the network keep up"). Updating any of these silently changes the
+// network-bandwidth warning threshold — tests pin both directions.
+export const HDD_OSD_GBPS = 1.6;        // ~200 MB/s sustained × 8 bits/byte / 1000
+export const SATA_SSD_OSD_GBPS = 4;     // ~500 MB/s sustained
+export const NVME_OSD_GBPS = 28;        // ~3.5 GB/s sustained (PCIe 3.0 ×4 ceiling)
+
 export interface NodeDerived {
   osd_count: number;
   hdd_osd_count: number;
@@ -43,6 +52,13 @@ export interface NodeDerived {
   // excluded from the available pool too.
   hba_ports_needed: number;
   hba_ports_available: number;
+  // Aggregate sustained throughput of all OSD-role drives, in Gb/s. Conservative
+  // per-class numbers (see HDD_OSD_GBPS / SATA_SSD_OSD_GBPS / NVME_OSD_GBPS in
+  // validation.ts). Compared against network_bandwidth_gbps to flag a network
+  // that can't saturate the disks.
+  osd_throughput_gbps: number;
+  // Sum of port_count × port_speed_gbps across every NIC slot.
+  network_bandwidth_gbps: number;
 }
 
 export function deriveNode(
@@ -104,6 +120,8 @@ export function deriveNode(
   let dbWalBytes = 0;
   let hbaPortsNeeded = 0;
   let hbaPortsAvailable = 0;
+  let osdThroughputGbps = 0;
+  let networkBandwidthGbps = 0;
 
   for (const slot of node.drives) {
     const d = library[slot.component_id];
@@ -125,9 +143,15 @@ export function deriveNode(
       if (d.category === 'hdd') {
         hddOsdCount += slot.count;
         hddRawBytes += bytes;
+        osdThroughputGbps += HDD_OSD_GBPS * slot.count;
+      } else if (d.category === 'sata_ssd') {
+        nvmeOsdCount += slot.count;
+        nvmeRawBytes += bytes;
+        osdThroughputGbps += SATA_SSD_OSD_GBPS * slot.count;
       } else {
         nvmeOsdCount += slot.count;
         nvmeRawBytes += bytes;
+        osdThroughputGbps += NVME_OSD_GBPS * slot.count;
       }
     } else if (slot.role === 'db_wal') {
       dbWalBytes += bytes;
@@ -153,6 +177,7 @@ export function deriveNode(
     powerTyp += c.watts_typical * slot.count;
     powerMax += c.watts_max * slot.count;
     lanesUsed += c.pcie_lanes * slot.count;
+    networkBandwidthGbps += c.ports * c.port_speed_gbps * slot.count;
   }
 
   const lanesPerSlot = defaults.lanes_per_slot;
@@ -182,5 +207,7 @@ export function deriveNode(
     psu_count: node.psu_count,
     hba_ports_needed: hbaPortsNeeded,
     hba_ports_available: hbaPortsAvailable,
+    osd_throughput_gbps: osdThroughputGbps,
+    network_bandwidth_gbps: networkBandwidthGbps,
   };
 }

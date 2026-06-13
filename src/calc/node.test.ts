@@ -85,3 +85,33 @@ describe('SC846 reference node — with metadata NVMe variant', () => {
     expect(d.drives_by_form_factor['u.3']).toBe(8);
   });
 });
+
+describe('Network bandwidth and OSD throughput accounting', () => {
+  it('SC846 reference: 24 × 1.6 Gb/s HDD throughput = 38.4 Gb/s; dual 100 GbE = 200 Gb/s', () => {
+    const d = deriveNode(SC846_HDD_ONLY, lib, defaults);
+    expect(d.osd_throughput_gbps).toBeCloseTo(38.4, 5);
+    expect(d.network_bandwidth_gbps).toBe(200);
+  });
+
+  it('metadata variant adds 2 × 28 Gb/s NVMe (94.4 total)', () => {
+    const d = deriveNode(SC846_WITH_METADATA, lib, defaults);
+    expect(d.osd_throughput_gbps).toBeCloseTo(38.4 + 56, 5);
+  });
+
+  it('db_wal drives do not contribute to OSD throughput (not OSDs)', () => {
+    // SC846 HDD-only has 6 × 3.84 TB NVMe in db_wal role — if those counted as
+    // OSDs, throughput would jump by 168 Gb/s. The fixture's number must stay
+    // at 38.4 Gb/s.
+    const d = deriveNode(SC846_HDD_ONLY, lib, defaults);
+    expect(d.osd_throughput_gbps).toBeCloseTo(38.4, 5);
+  });
+
+  it('multiple NIC slots aggregate (3 × dual 100 GbE = 600 Gb/s)', () => {
+    const node = {
+      ...SC846_HDD_ONLY,
+      nics: [{ component_id: 'nic-mellanox-cx5-100gbe', count: 3 }],
+    };
+    const d = deriveNode(node, lib, defaults);
+    expect(d.network_bandwidth_gbps).toBe(600);
+  });
+});
