@@ -101,7 +101,7 @@ export function NodeBuilder() {
 
   return (
     <div className="screen">
-      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '230px 1fr', gap: 18, alignItems: 'start' }}>
+      <div className="screen-inner split-listed">
         <div className="stack-sm">
           <div className="row">
             <button className="btn prime sm grow" type="button" onClick={startNew}>+ New node</button>

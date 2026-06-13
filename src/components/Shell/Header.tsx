@@ -8,6 +8,7 @@ import {
 } from '../../calc/scenario';
 import { buildShareUrl } from '../../calc/shareLink';
 import type { Workspace } from '../../types/scenario';
+import { DisclaimersFooter } from './Disclaimers';
 
 export function Header() {
   const { workspace, dispatch } = useWorkspace();
@@ -82,7 +83,9 @@ export function Header() {
         <div>
           <div className="hdr-title">Ceph Cluster Planner</div>
         </div>
-        <span className="hdr-sub">bottom-up sizing &amp; costing · all math client-side</span>
+        <span className="hdr-sub">
+          bottom-up sizing &amp; costing · all math client-side · <DisclaimersFooter />
+        </span>
       </div>
       <div className="hdr-actions">
         {flash ? <span className="counts" style={{ marginRight: 8 }}>{flash}</span> : null}

@@ -114,7 +114,7 @@ export function ComponentLibrary() {
 
   return (
     <div className="screen">
-      <div className="screen-inner" style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '18px', alignItems: 'start' }}>
+      <div className="screen-inner split-sidebar">
         <div className="stack-sm" style={{ position: 'sticky', top: 0 }}>
           <span className="microlabel" style={{ padding: '0 10px' }}>Categories</span>
           <div className="cats">

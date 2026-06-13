@@ -3,19 +3,20 @@ import { WorkspaceProvider } from './state/workspace';
 import { ThemeProvider } from './state/theme';
 import { ScenariosProvider } from './state/useScenarios';
 import { useShareLinkLoader } from './state/useShareLink';
+import { useHashTab } from './state/useHashTab';
 import { ComponentLibrary } from './components/ComponentLibrary';
 import { NodeBuilder } from './components/NodeBuilder';
 import { RackBuilder } from './components/RackBuilder';
 import { ClusterView } from './components/ClusterView';
 import { ScenarioManager } from './components/ScenarioManager';
 import { Header } from './components/Shell/Header';
-import { Stepper, type Tab } from './components/Shell/Stepper';
+import { Stepper } from './components/Shell/Stepper';
 import { SummaryRail, SummaryStrip } from './components/Shell/SummaryRail';
 import { IssuesDrawer } from './components/Shell/IssuesDrawer';
 
 function Shell() {
   useShareLinkLoader();
-  const [tab, setTab] = useState<Tab>('components');
+  const [tab, setTab] = useHashTab('components');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const openDrawer = () => setDrawerOpen(true);
   const closeDrawer = () => setDrawerOpen(false);
